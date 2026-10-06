@@ -25,19 +25,21 @@ static const uint16_t HC_DEG_COL[7] = {RGB(255, 92, 92), RGB(255, 160, 48), RGB(
 
 /* ------------------------------------------------------------ sounds --- */
 typedef struct { const char *name; uint8_t engine, preset, env; } hc_sound_t;
+#define HCE ((uint8_t)ENGI_HC)
 static const hc_sound_t HC_SOUNDS[] = {
-    {"SINE", 0, 5, HE_LONG},        {"SAW", 0, 0, HE_LONG},          {"TRIANGLE", 3, 3, HE_LONG},
-    {"SQUARE", 3, 0, HE_LONG},      {"E.PIANO", 12, 0, HE_KEYS},     {"FM PLUCK", 12, 7, HE_KEYS},
-    {"BELL", 12, 1, HE_KEYS},       {"FM ORGAN", 12, 6, HE_SUSTAIN}, {"FM BRASS", 12, 3, HE_SUSTAIN},
+    {"SINE", HCE, 0, HE_LONG},      {"SAW", HCE, 1, HE_LONG},        {"TRIANGLE", HCE, 2, HE_LONG},
+    {"SQUARE", HCE, 3, HE_LONG},    {"E.PIANO", HCE, 4, HE_KEYS},    {"HX7 PIANO", HCE, 5, HE_KEYS},
+    {"FM BELL", HCE, 6, HE_KEYS},   {"FM ORGAN", HCE, 7, HE_SUSTAIN}, {"FM BRASS", HCE, 8, HE_SUSTAIN},
     {"STRINGS", 0, 11, HE_LONG},    {"CLARINET", 0, 10, HE_SUSTAIN}, {"CELLOS", 2, 2, HE_LONG},
     {"ACOUSTIC", 9, 2, HE_KEYS},    {"BRASS", 0, 9, HE_SUSTAIN},     {"PIANO", 4, 0, HE_KEYS},
     {"VIBES", 9, 1, HE_KEYS},       {"VIOLINS", 0, 3, HE_LONG},      {"VOX AHH", 5, 0, HE_LONG},
     {"SAX", 4, 3, HE_SUSTAIN},      {"HARP", 9, 8, HE_KEYS},         {"HUMMING", 5, 1, HE_LONG},
     {"SYNTH BASS", 6, 0, HE_SHORT}, {"ARCADE", 11, 2, HE_SHORT},     {"FLUTE", 4, 2, HE_SUSTAIN},
-    {"SAW SQUARE", 0, 6, HE_LONG},  {"JUNO POLY", 0, 1, HE_LONG},    {"OCEAN PAD", 8, 0, HE_SWELL},
-    {"WOBBLE BASS", 5, 2, HE_SHORT}, {"BUZZ ORGAN", 7, 4, HE_SUSTAIN}, {"ORGAN", 7, 0, HE_SUSTAIN},
+    {"SAW SQUARE", HCE, 9, HE_LONG}, {"JUNO POLY", HCE, 10, HE_LONG}, {"OCEAN PAD", HCE, 11, HE_SWELL},
+    {"WOBBLE BASS", HCE, 12, HE_SHORT}, {"BUZZ ORGAN", 7, 4, HE_SUSTAIN}, {"ORGAN", 7, 0, HE_SUSTAIN},
     {"HORNS", 2, 0, HE_SUSTAIN},    {"E GUITAR", 6, 2, HE_KEYS},     {"KALIMBA", 9, 4, HE_KEYS},
     {"SAW BASS", 0, 7, HE_SHORT},   {"SHIMMER", 8, 3, HE_SWELL},     {"GOSPEL ORGAN", 7, 2, HE_SUSTAIN},
+    {"PURE SINE", HCE, 13, HE_LONG},
 };
 #define HC_NSOUNDS (sizeof HC_SOUNDS / sizeof HC_SOUNDS[0])
 /* the HiChord's ten scales (CC 103 order) -> Felucca's SCALE values */

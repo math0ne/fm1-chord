@@ -1607,7 +1607,7 @@ function makeMockDevice(opt = {}) {
     E("MIDI", ["USB", "TRS"], 0), E("SYNC", NDASH, 0), E("ROUT", ["CH1-4", "SEL"], 0), D("CPU", F.INT, 0, 0, 0),
     D("SLOT", F.INT, 1, 4, 1), E("NAME", NDASH, 0), E("LOAD", NGO, 0), E("SAVE", NGO, 0),
     E("ENG", ["ANALOG", "-", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL",
-      "GRAIN", "PHYS", "DRUM", "NOISE", "FM6", "SLICE"], 0), E("SET", NGO, 0),
+      "GRAIN", "PHYS", "DRUM", "NOISE", "FM6", "SLICE", "CHORD"], 0), E("SET", NGO, 0),
     E("CLRSQ", NGO, 0), E("INIT", NGO, 0),
     E("TYPE", ["ROOM", "SPRING"], 0),               /* G_RTYPE (id 24, was G_DRCH): the reverb's model */
     D("-", F.INT, 0, 0, 0), D("-", F.INT, 0, 0, 0),   /* G_DRLVL, G_DRREV: inert since 1.0 */
@@ -1692,6 +1692,18 @@ function makeMockDevice(opt = {}) {
         E("DIV", ["4", "8", "16", "32", "AUTO", "MAN"], 2), D("START", F.INT, 0, 31, 0), D("PTCH", F.SEMI, -24, 24, 0),
         E("MODE", ["ONE", "GATE", "LOOP"], 0), E("REV", ["OFF", "ON"], 0), D("DCAY", F.TIME, 0, 127, 127), D("TONE", F.INT, 0, 127, 127)],
       presets: [P("CHOP", [0, 2, 0, 0, 0, 0, 127, 127], [0, 127, 127, 30], 0, 9), P("STUTTER", [0, 1, 0, 0, 1, 0, 90, 110], [0, 127, 127, 12], 0, 10)] },
+    { name: "CHORD", titles: ["VOICE", "FM"], edit: [E("WAVE", ["SINE", "TRI", "SAW", "SQR", "FM", "NOISE"], 0),
+        E("BASS", ["SAME", "SINE", "TRI", "SAW", "SQR"], 0), E("LAYR2", ["SAME", "SINE", "TRI", "SAW", "SQR", "OFF"], 0),
+        D("RATIO", F.INT, 1, 24, 2, null, "/2"), D("DEPTH", F.PCT, 0, 127, 0), D("DECAY", F.INT, 0, 127, 0), D("-", F.INT, 0, 0, 0),
+        D("TONE", F.PCT, 0, 127, 127)],
+      presets: [P("SINE", [0, 3, 0, 2, 0, 0, 0, 127], [30, 80, 110, 70]), P("SAW", [2, 2, 0, 2, 0, 0, 0, 110], [30, 80, 110, 70]),
+        P("TRIANGLE", [1, 2, 0, 2, 0, 0, 0, 127], [30, 80, 110, 70]), P("SQUARE", [3, 2, 0, 2, 0, 0, 0, 100], [30, 80, 110, 70]),
+        P("E.PIANO", [4, 0, 0, 2, 55, 40, 0, 110], [2, 90, 60, 60]), P("HX7 PIANO", [4, 0, 0, 2, 90, 60, 0, 120], [2, 95, 40, 60]),
+        P("FM BELL", [4, 0, 0, 7, 80, 25, 0, 127], [2, 100, 30, 80]), P("FM ORGAN", [4, 0, 0, 4, 30, 0, 0, 120], [5, 60, 127, 40]),
+        P("FM BRASS", [4, 0, 0, 2, 75, 20, 0, 115], [40, 80, 100, 50]), P("SAW SQUARE", [2, 2, 5, 2, 0, 0, 0, 110], [30, 80, 110, 70]),
+        P("JUNO POLY", [2, 0, 5, 2, 0, 0, 0, 100], [40, 80, 110, 80]), P("OCEAN PAD", [2, 0, 6, 2, 0, 0, 0, 60], [90, 80, 110, 100]),
+        P("WOBBLE BASS", [3, 0, 0, 2, 100, 0, 0, 90], [5, 60, 120, 40]), P("PURE SINE", [0, 0, 0, 2, 0, 0, 0, 127], [30, 80, 110, 70]),
+        P("NOISE", [5, 0, 0, 2, 0, 0, 0, 60], [30, 80, 110, 70])] },
   ];
   const FM6_E = ENG.findIndex((e) => e.name === "FM6"), FM6_BANK = 27;
   /* factory PATTERNS[] (engines.c; the device loads them from SEQ > PATTERNS, presets only suggest one): absolute
@@ -2286,7 +2298,7 @@ function aliasOf(names, i) { const k = names ? names.indexOf(names[i]) : -1; ret
    the engine numbers. engineOrder(names): the indices of names in that order, "-" (a reserved number) left out; a name
    the list does not know (another firmware) follows in index order */
 const ENGINE_ORDER = ["ANALOG", "FM6", "DIGITAL", "PHASE", "LOFI", "SAMPLE", "VOICE", "TRIO", "WHEEL", "GRAIN", "PHYS", "NOISE",
-  "SLICE", "DRUM"];
+  "SLICE", "CHORD", "DRUM"];
 function engineOrder(names) {
   const rank = (n) => { const k = ENGINE_ORDER.indexOf(n); return k < 0 ? ENGINE_ORDER.length : k; };
   return (names || []).map((n, i) => i).filter((i) => names[i] !== "-")

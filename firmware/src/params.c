@@ -37,6 +37,7 @@ static const char *const N_ENGNAME[] = {"ANALOG", FELUCCA_FM4 ? "DIGITAL" : "-",
 #if FELUCCA_SLICE
                                              "SLICE",
 #endif
+                                             "CHORD",
 };
 
 #define PD(l, f, mn, mx, df) {l, f, mn, mx, df, 0, 0}

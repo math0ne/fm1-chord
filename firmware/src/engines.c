@@ -22,6 +22,7 @@
 #if FELUCCA_SLICE
 #include "eng_slice.c"
 #endif
+#include "eng_hc.c"             /* HICHORD: the HiChord's voice (fm1-chord) */
 
 /* the editor protocol, user presets and projects store these indices: append, never reorder */
 static const engine_t *const ENGINES[NENGINES] = {
@@ -45,6 +46,7 @@ static const engine_t *const ENGINES[NENGINES] = {
 #if FELUCCA_SLICE
     &ENG_SLICE,                  /* 13 (FELUCCA_SLICE=0 builds without it) */
 #endif
+    &ENG_HC,                     /* 13 + FELUCCA_SLICE (ENGI_HC) */
 };
 
 /* a track's engine number as an index (the audio paths: a compare, cheaper than % NENGINES; a bad number: 0) */
@@ -64,6 +66,7 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 #if FELUCCA_SLICE
     13,                          /* SLICE */
 #endif
+    ENGI_HC,                     /* HICHORD */
     10,                          /* DRUM */
 };
 

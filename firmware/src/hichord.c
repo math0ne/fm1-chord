@@ -343,6 +343,7 @@ static uint32_t hc_make(const track_t *t, uint32_t root, uint8_t *out, int32_t *
             bass += o;
     }
     hs_voice(&hc.cur, r, q, bass, c->voices, inv);
+    eng_hc_bass[ti % NPART] = (int16_t)bass;            /* the HICHORD engine: the bass slot's own wave */
     hs_name(hc.name, tonic, r, q, bass);
     hc.cur_dir = hc.dir;
     hc.cur_q = (uint8_t)q;

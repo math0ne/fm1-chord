@@ -20,7 +20,8 @@
 #define FELUCCA_FM4 0            /* the DIGITAL engine (eng_digital.c, four-operator FM): kept in the tree, not built
                                   * by default; replaced by FM6, its sounds convert (fm4_convert.c) */
 #endif
-#define NENGINES (13 + FELUCCA_SLICE)   /* SLICE (13) comes last: the other engines keep their numbers */
+#define NENGINES (14 + FELUCCA_SLICE)   /* SLICE (13), then HICHORD (fm1-chord, eng_hc.c): appended, the others keep their numbers */
+#define ENGI_HC (13u + FELUCCA_SLICE)   /* the HICHORD engine (hui.c HC_SOUNDS) */
 #define ENGI_DIGITAL 1u          /* reserved without FELUCCA_FM4: never selectable (eng_ok), its sounds load as FM6 */
 #define NENG_SHOWN (NENGINES - !FELUCCA_FM4)   /* the engines one can pick: PRESETS, the EDIT layer, the editor,
                                                 * in the display order of engines.c ENGINE_ORDER */

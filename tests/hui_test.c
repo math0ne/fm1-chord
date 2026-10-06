@@ -39,7 +39,7 @@ static int test_boot_and_menus(void)
     track_t *t = &trk[0];
     hui_power_on();
     bad += check("power-on: the HiChord UI is up, HOME, the track plays HiChord keys with the SAW sound",
-                 hui.on && hui.screen == HU_HOME && t->p[P_CHRD] == CH_HI && hc.t[0].sound == 1u && t->eng_req == 0u &&
+                 hui.on && hui.screen == HU_HOME && t->p[P_CHRD] == CH_HI && hc.t[0].sound == 1u && t->eng_req == ENGI_HC &&
                  t->p[P_VOICE] == V_POLY);
     press(B_SCL);
     bad += check("SCL: the KEY menu", hui.screen == HU_KEY);
@@ -102,8 +102,8 @@ static int test_sound_menu(void)
     bad += check("SOUND: SAW, LONG, the effects OFF", val_is(HU_SOUND, RS_SOUND, "SAW") && val_is(HU_SOUND, RS_ENV, "LONG") &&
                  val_is(HU_SOUND, RS_REV, "OFF") && val_is(HU_SOUND, RS_STEREO, "ON"));
     press(B_OCTUP);
-    bad += check("  OCT+: TRIANGLE loaded (LOFI engine), CHRD HI kept, its envelope", val_is(HU_SOUND, RS_SOUND, "TRIANGLE") &&
-                 t->eng_req == 3u && t->p[P_CHRD] == CH_HI && hc.t[0].env == HE_LONG);
+    bad += check("  OCT+: TRIANGLE loaded (the HICHORD engine), CHRD HI kept, its envelope", val_is(HU_SOUND, RS_SOUND, "TRIANGLE") &&
+                 t->eng_req == ENGI_HC && t->p[P_CHRD] == CH_HI && hc.t[0].env == HE_LONG);
     turn(EN_SELECT, 1); press(B_OCTUP);
     bad += check("ENVELOPE: SHORT -> ATK 100 ms", hc.t[0].env == HE_SHORT && TIME_MS_X10[t->p[P_ATK]] / 10u >= 80u && TIME_MS_X10[t->p[P_ATK]] / 10u <= 120u);
     turn(EN_SELECT, 1); press(B_OCTUP);
@@ -181,7 +181,7 @@ static int test_mode_menu_knobs(void)
     turn(EN_ALGO, -2);
     bad += check("  back two: STRUM", hc.t[0].play == HP_STRUM);
     turn(EN_PRESET, 1);
-    bad += check("PRESETS knob: the next sound (TRIANGLE)", hc.t[0].sound == 2u && t->eng_req == 3u);
+    bad += check("PRESETS knob: the next sound (TRIANGLE)", hc.t[0].sound == 2u && t->eng_req == ENGI_HC);
     turn(EN_PRESET, -1);
     turn(EN_K1, -5);
     bad += check("KNOB 1: the FILTER wheel on, the cutoff down", hc.t[0].filt == 1u && hc.t[0].cutoff == 112u);
@@ -469,7 +469,7 @@ static int test_seq_drums_mixer(void)
     bad += check("DRUM KIT: HAND -> the engine's KIT", hc.t[0].kit == 1u && t->p[P_E0] == 1);
     press(B_HOME);
     hui_mode_set(t, HP_PLAY);
-    bad += check("back to PLAY: the sound is back (SAW on ANALOG)", t->eng_req == 0u && hc.t[0].sound == 1u);
+    bad += check("back to PLAY: the sound is back (SAW on HICHORD)", t->eng_req == ENGI_HC && hc.t[0].sound == 1u);
     /* the drum loops */
     hui_mode_set(t, HP_DRUMLOOP);
     bad += check("DRUM LOOP: the DRUM engine, the loop runs", t->eng_req == ENGI_DRUM && hcs.dl_running);
@@ -484,7 +484,7 @@ static int test_seq_drums_mixer(void)
     press(B_PLAY);
     bad += check("PLAY: the loop stops", !hcs.dl_running);
     hui_mode_set(t, HP_MIXER);
-    bad += check("MIXER: the sound back on the track", t->eng_req == 0u);
+    bad += check("MIXER: the sound back on the track", t->eng_req == ENGI_HC);
     key_down(9); key_up(9);                            /* the D4 key: layer 2 mute */
     bad += check("  key 2: layer 2 muted; again: unmuted", trk[1].p[P_MUTE] == 1 && (key_down(9), key_up(9), trk[1].p[P_MUTE] == 0));
     key_down(18); key_up(18);                          /* B4: the metronome */

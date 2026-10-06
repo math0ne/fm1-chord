@@ -1,0 +1,113 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python deps
+        run: pip install --quiet Pillow fonttools mido python-rtmidi
+
+      - name: JieLi toolchain (cached)
+        id: tc
+        uses: actions/cache@v4
+        with:
+          path: ~/.jieli
+          key: jieli-toolchain-20250324.1
+      - name: JieLi toolchain
+        if: steps.tc.outputs.cache-hit != 'true'
+        run: tools/get_toolchain.sh
+
+      - name: JieLi AC79 SDK (the three files the package needs, cached)
+        id: sdk
+        uses: actions/cache@v4
+        with:
+          path: ~/fw-AC79_AIoT_SDK
+          key: ac79-sdk-V1.2.1-2023-12-13
+      - name: JieLi AC79 SDK
+        if: steps.sdk.outputs.cache-hit != 'true'
+        run: |
+          git clone --quiet --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
+            https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git ~/fw-AC79_AIoT_SDK
+
+      - name: Version from the tag
+        id: ver
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "rel=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "rel=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build (dev)
+        if: steps.ver.outputs.rel == ''
+        run: ./build.sh
+
+      - name: Build (release)
+        if: steps.ver.outputs.rel != ''
+        run: ./build.sh --release "${{ steps.ver.outputs.rel }}"
+
+      - name: Host tests
+        run: AC79_SDK=$HOME/fw-AC79_AIoT_SDK sh tests/run_tests.sh
+
+      - name: Screens
+        run: |
+          cc -O1 -w -Ibuild/gen -Ifirmware/src -o build/host/hui_shot tests/hui_shot.c -lm
+          mkdir -p build/hui_shots && build/host/hui_shot build/hui_shots > /dev/null
+          python3 - <<'EOF'
+          from PIL import Image; import glob
+          for p in glob.glob("build/hui_shots/*.ppm"):
+              Image.open(p).resize((480, 480), Image.NEAREST).save(p[:-4] + ".png")
+          EOF
+
+      - name: Package (dev)
+        if: steps.ver.outputs.rel == ''
+        run: |
+          mkdir -p dist
+          cp build/felucca.fwsc "dist/fm1-chord-dev-${GITHUB_SHA::7}.fwsc"
+          cp build/felucca.bin "dist/fm1-chord-dev-${GITHUB_SHA::7}-app.bin"
+          cp build/hui_shots/*.png dist/
+
+      - name: Package (release)
+        if: steps.ver.outputs.rel != ''
+        run: |
+          mkdir -p dist
+          r="${{ steps.ver.outputs.rel }}"
+          cp "build/felucca-$r.fwsc" "dist/fm1-chord-$r.fwsc"
+          cp "build/release-$r/felucca-$r-app.bin" "dist/fm1-chord-$r-app.bin"
+          cp build/release-$r/LICENSE build/release-$r/LICENSING.md dist/
+          cp -r build/release-$r/LICENSES dist/
+          (cd dist && sha256sum *.fwsc *.bin > SHA256SUMS)
+          cp build/hui_shots/*.png dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fm1-chord-${{ steps.ver.outputs.rel || 'dev' }}
+          path: dist
+
+      - name: Release
+        if: steps.ver.outputs.rel != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          name: fm1-chord ${{ steps.ver.outputs.rel }}
+          body: |
+            fm1-chord ${{ steps.ver.outputs.rel }} for the M-VAVE FM-1 (a Felucca fork).
+
+            `fm1-chord-${{ steps.ver.outputs.rel }}.fwsc` installs with Felucca's command line installer
+            (`python3 tools/fm1_install.py <file>`) or M-VAVE's own updater. **Not yet run on hardware**:
+            build the FM-1-transporter recovery dongle and dump the stock flash before flashing.
+            GPL-3.0; the licences of what the package carries are in LICENSES/.
+          files: |
+            dist/fm1-chord-${{ steps.ver.outputs.rel }}.fwsc
+            dist/fm1-chord-${{ steps.ver.outputs.rel }}-app.bin
+            dist/SHA256SUMS
+            dist/LICENSE
+            dist/LICENSING.md

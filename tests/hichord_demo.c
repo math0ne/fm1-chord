@@ -59,9 +59,7 @@ int main(int argc, char **argv)
     ui_power_on();
     hc_init();
     usb.config = 1;
-    for (i = 0; i < ENGINES[0]->npresets; i++)
-        if (str_eq(ENGINES[0]->presets[i].name, "STRINGS"))
-            host_preset(&trk[0], 0, i);
+    host_preset(&trk[0], ENGI_HC, 4);                               /* the CHORD engine: E.PIANO (2-op FM, as the HiChord) */
     trk[0].p[P_VOICE] = V_POLY;
     trk[0].p[P_SCALE] = 1;                                          /* C major */
     trk[0].p[P_ROOT] = 0;

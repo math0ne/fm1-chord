@@ -18,6 +18,8 @@ wheel; key, scale, bass, voices, voice leading; four presets; MIDI in and out. O
 Three menus on three buttons, colour-coded like the HiChord's: **SCL** key (grey), **FX** sound
 (yellow), **EDIT** mode (red), **SAVE** presets. HOME held gives you Felucca's full synth underneath.
 
+![controls](screenshots/controls.png)
+
 | | |
 |---|---|
 | ![home](screenshots/home_c7.png) | ![effects](screenshots/home_fx.png) |
