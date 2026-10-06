@@ -26,7 +26,7 @@ jobs:
         if: steps.tc.outputs.cache-hit != 'true'
         run: tools/get_toolchain.sh
 
-      - name: JieLi AC79 SDK files (vendor/ac79: the three the package needs, Apache-2.0)
+      - name: "JieLi AC79 SDK files (vendor/ac79, the three the package needs, Apache-2.0)"
         run: echo "AC79_SDK=$GITHUB_WORKSPACE/vendor/ac79" >> "$GITHUB_ENV"
 
       - name: Version from the tag
