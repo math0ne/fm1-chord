@@ -5,22 +5,29 @@
  * palette: UI_PAL_TAG + index; an old id (below 20, earlier firmware) is migrated on import.
  * bold: no longer used (one font weight); kept as it was saved, unless it holds the HOLD setting (panel.c).
  * zoom: no longer used (the large readout); kept as it was saved, unless it holds the LEDS setting (panel.c). */
+/* PER5 (fm1-chord): hcp, the four HiChord presets' own state (hui.c hc_preset_pack: the chord settings, the
+ * key inversions and locks), opaque bytes here; a PER4 record (upstream Felucca) imports with them empty */
+#define HC_PRESET_BYTES 256u
 typedef struct {
     uint32_t magic, palette, lowcut, zoom;
     panel_t panel;
     uint32_t bold;
     struct { uint8_t factory[16][32]; uint32_t user, filter; } favorites;
+    uint8_t hcp[4][HC_PRESET_BYTES];
 } persist_t;
-#define PERSIST_MAGIC 0x50455234u
+#define PERSIST_MAGIC 0x50455235u
+#define PERSIST_MAGIC_V4 0x50455234u
+static uint8_t hc_presets[4][HC_PRESET_BYTES];   /* the presets as last imported / saved (hui.c reads and writes) */
 
 /* Normalize in place; 1 = current, 2 = migrated, 0 = invalid. */
 static int settings_import(persist_t *p, int n)
 {
     int current = n == (int)sizeof *p && p->magic == PERSIST_MAGIC;
-    int old3 = n == (int)(sizeof *p - sizeof p->favorites) && p->magic == 0x50455233u;
-    int old2 = n == (int)(sizeof *p - sizeof p->favorites - sizeof p->bold) && p->magic == 0x50455232u;
+    int old4 = n == (int)(sizeof *p - sizeof p->hcp) && p->magic == PERSIST_MAGIC_V4;
+    int old3 = n == (int)(sizeof *p - sizeof p->hcp - sizeof p->favorites) && p->magic == 0x50455233u;
+    int old2 = n == (int)(sizeof *p - sizeof p->hcp - sizeof p->favorites - sizeof p->bold) && p->magic == 0x50455232u;
     int old1 = n == (int)(8u + sizeof(panel_t)) && p->magic == 0x50455231u;
-    if (!(current || old3 || old2 || old1)) return 0;
+    if (!(current || old4 || old3 || old2 || old1)) return 0;
     if (old1) {
         panel_t old;
         memcpy(&old, (uint8_t *)p + 8, sizeof old);
@@ -28,7 +35,9 @@ static int settings_import(persist_t *p, int n)
         p->lowcut = p->zoom = 0;
     }
     if (old1 || old2) p->bold = 0;
-    if (!current) memset(&p->favorites, 0, sizeof p->favorites);
+    if (old1 || old2 || old3) memset(&p->favorites, 0, sizeof p->favorites);
+    if (!current) memset(p->hcp, 0, sizeof p->hcp);
+    memcpy(hc_presets, p->hcp, sizeof hc_presets);
     p->magic = PERSIST_MAGIC;
     p->palette = palette_to_stored(palette_from_stored(p->palette));
     settings.magic = SETTINGS_MAGIC;
@@ -67,4 +76,5 @@ static void settings_export(persist_t *p)
 #ifdef FELUCCA_FAVORITES
     memcpy(&p->favorites, &favorites, sizeof favorites);
 #endif
+    memcpy(p->hcp, hc_presets, sizeof p->hcp);
 }

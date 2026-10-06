@@ -13,12 +13,14 @@
  * engine that maps the keys itself) ignores CHRD. Every source keeps the notes it started (kb_chord for a
  * key, mchord for a MIDI note) and its release ends exactly those, so CHRD / VOIC changed while it is held
  * leave nothing hanging. A note several sources hold sounds once and ends with the last of them. */
-enum { CH_OFF, CH_DIA3, CH_DIA7, CH_MAJ, CH_MIN, CH_DOM7, CH_MAJ7, CH_MIN7, CH_SUS4, CH_POW };
+/* CH_HI (fm1-chord, hichord.c): the keys are scale degrees and modifiers, up to six notes a chord */
+enum { CH_OFF, CH_DIA3, CH_DIA7, CH_MAJ, CH_MIN, CH_DOM7, CH_MAJ7, CH_MIN7, CH_SUS4, CH_POW, CH_HI };
 enum { VC_CLOSE, VC_OPEN, VC_INV1, VC_INV2, VC_BASS };
-#define CHORD_MAX 4u
+#define CHORD_MAX 6u                     /* (was 4: CH_HI voices six slots; the shapes below use four) */
 #define MCHORD_N 24u                     /* MIDI notes held as chords at once (more: their root alone) */
 
-static const int8_t CHORD_SHAPE[CH_POW - CH_MAJ + 1][CHORD_MAX] = {
+#define SHAPE_MAX 4u
+static const int8_t CHORD_SHAPE[CH_POW - CH_MAJ + 1][SHAPE_MAX] = {
     {0, 4, 7, -1}, {0, 3, 7, -1}, {0, 4, 7, 10}, {0, 4, 7, 11}, {0, 3, 7, 10}, {0, 5, 7, -1}, {0, 7, 12, -1},
 };
 
@@ -27,7 +29,8 @@ typedef struct { uint8_t id, ch, src, n, note[CHORD_MAX]; } mchord_t;   /* id: t
 static mchord_t mchord[MCHORD_N];
 /* the last chord played per track (the CHORD page shows it): its root, notes, and the shape's tones above the
  * root (bit i = i semitones, 0..11) */
-static struct { uint8_t root, n, note[CHORD_MAX]; uint16_t mask; uint8_t gen; } chord_last[NTRK];
+static struct { uint8_t root, n, note[CHORD_MAX]; uint16_t mask; uint8_t gen; char name[12]; } chord_last[NTRK];
+                                         /* name: CH_HI's (hichord.c; "" = chord_name of root and mask) */
 
 /* 1 = the track's keys are a kit: no chords */
 static int chord_kit(const track_t *t)
@@ -36,13 +39,15 @@ static int chord_kit(const track_t *t)
     return e->oneshot || (e->keys && e->keys(t, 0) >= 0);
 }
 
+#include "hichord.c"                    /* CH_HI: the HiChord key layer (fm1-chord) */
+
 /* the tones of the chord (semitones above *root, ascending, iv[0] = 0) -> their number; DIA may move *root
  * down onto the scale */
 static uint32_t chord_tones(const track_t *t, uint32_t mode, int32_t *root, int32_t *iv)
 {
     uint32_t n = 0, i;
     if (mode >= CH_MAJ) {
-        for (i = 0; i < CHORD_MAX && CHORD_SHAPE[mode - CH_MAJ][i] >= 0; i++)
+        for (i = 0; i < SHAPE_MAX && CHORD_SHAPE[mode - CH_MAJ][i] >= 0; i++)
             iv[n++] = CHORD_SHAPE[mode - CH_MAJ][i];
         return n;
     }
@@ -77,9 +82,19 @@ static uint32_t chord_make(const track_t *t, uint32_t root, uint8_t *out, int32_
     uint16_t mask = 0;
     *rp = r;
     *maskp = 0;
-    if (!mode || mode > CH_POW || chord_kit(t)) {
+    if (!mode || mode > CH_HI || chord_kit(t)) {
         out[0] = (uint8_t)root;
         return 1;
+    }
+    if (mode == CH_HI) {                                /* the HiChord layer (hichord.c) */
+        if (trk_vmode(t) != V_POLY) {                   /* one voice: the degree's root (LEAD) */
+            int32_t rr = hc.cur_key < 27u ? (int32_t)root : scale_snap(t, (int32_t)root);
+            *rp = rr;
+            *maskp = 1;
+            out[0] = (uint8_t)clamp(rr, 0, 127);
+            return 1;
+        }
+        return hc_make(t, root, out, rp, maskp);
     }
     n = chord_tones(t, mode, &r, iv);
     for (i = 0; i < n; i++)
@@ -105,7 +120,7 @@ static uint32_t chord_make(const track_t *t, uint32_t root, uint8_t *out, int32_
         }
         break;
     case VC_BASS:                                       /* the root an octave down; a seventh drops its fifth */
-        if (n == CHORD_MAX) {
+        if (n == SHAPE_MAX) {
             iv[2] = iv[3];
             n--;
         }
@@ -123,7 +138,7 @@ static uint32_t chord_make(const track_t *t, uint32_t root, uint8_t *out, int32_
             iv[j] = iv[j - 1u];
             iv[j - 1u] = x;
         }
-    for (i = 0; i < n && m < CHORD_MAX; i++) {          /* inside 0..127, each note once */
+    for (i = 0; i < n && m < SHAPE_MAX; i++) {          /* inside 0..127, each note once */
         x = r + iv[i];
         if (x < 0 || x > 127 || (m && out[m - 1u] == (uint8_t)x))
             continue;
@@ -148,6 +163,7 @@ static uint32_t chord_build(track_t *t, uint32_t root, uint8_t *out)
         chord_last[k].n = (uint8_t)m;
         for (i = 0; i < CHORD_MAX; i++)
             chord_last[k].note[i] = i < m ? out[i] : 0u;
+        str_cpy(chord_last[k].name, t->p[P_CHRD] == CH_HI ? hc.name : "", 12);
         chord_last[k].gen++;
     }
     return m;

@@ -352,8 +352,11 @@ static void draw_foot(void)
     const char *ename = e->name;
     int32_t x;
     sound_name(t, pn);
-    if (ui.home) {
-        str_cpy(ti, "HOME", sizeof ti);
+    if (ui.home) {                                     /* CHRD HI (hichord.c): the chord played last, else HOME */
+        if (hc_on(t) && chord_last[song.sel].n && chord_last[song.sel].name[0])
+            str_cpy(ti, chord_last[song.sel].name, sizeof ti);
+        else
+            str_cpy(ti, "HOME", sizeof ti);
     } else {                                           /* page title + number in its family: "ENV DEST 2/2" */
         uint32_t i, n = 0, k = 0;
         const char *pt = pg->scope == SC_ENGINE ? e->page_title[pg->id[0] != P_E0] : 0;   /* EDIT: the engine's */
@@ -783,9 +786,15 @@ static void draw_confirm(void)
     cv_blit(DLG_X, DLG_Y);
 }
 
+static int hui_active(void);                        /* hui.c (fm1-chord) */
+static void hui_draw(void);
 static void ui_draw(void)
 {
     ui.frame++;
+    if (hui_active()) {
+        hui_draw();
+        return;
+    }
     if (ui.uboot) {
         draw_uboot();
         draw_head();

@@ -33,7 +33,7 @@ LOWER = ["oeo", "coco", "eco", "nono", "minimum", "hello", "level", "decay", "re
 UPPER = ["CUTOFF", "RESO", "LEVEL", "DECAY", "RELEASE", "SOUND", "OCOE", "COCO", "NONO", "MINIMUM", "SUPER SAW",
          "FELUCCA", "PRESETS", "ANALOG", "DIGITAL", "PITCH", "SWING", "AV AW LT TA YO"]
 RULE = ["gfx"]   # "gfx": src/gfx.c cv_text; "rounded": the earlier rule (each glyph at the rounded pen, 1 phase)
-LIMIT = {"S": 0.25, "M": 0.25, "L": 0.5}
+LIMIT = {"S": 0.25, "M": 0.25, "L": 0.5, "X": 0.6}
 
 
 def parse(path):
@@ -68,7 +68,7 @@ def glyph_at(f, c):
 
 def glyph(f, c):
     """src/gfx.c glyph(): the index of the glyph (its phase 0 entry is g[index << psh])"""
-    if ord("a") <= c <= ord("z") and f["last"] < ord("a"):
+    if ord("a") <= c <= ord("z") and f["last"] < ord("a") and glyph_at(f, c) is None:   # (X keeps its lowercase)
         c -= 32
     k = glyph_at(f, c)
     if k is None and c == 0x85:
@@ -83,7 +83,7 @@ def place(f, s):
     out, pen, prev, psh, err = [], 0, 0, f["psh"], 0
     for ch in s:
         c = ord(ch)
-        if ord("a") <= c <= ord("z") and f["last"] < ord("a"):
+        if ord("a") <= c <= ord("z") and f["last"] < ord("a") and glyph_at(f, c) is None:
             c -= 32
         if prev:
             pen += f["kern"].get((prev << 8) | c, 0)
@@ -180,8 +180,10 @@ def main():
         font, px = spec[name]
         font_hi = ar.open_font(font, px * SS)
         words = LOWER if f["last"] >= ord("z") else UPPER
+        if name == "X":                      # fm1-chord: the chord names of the HOME screen (hui.c)
+            words = ["Cmaj", "Dm", "Fsus", "Gaug", "Bbadd", "Em/C", "Cdim", "AmM", "Abm", "Gbsus", "Edim"]
         # a sparse face (L): the words it can draw (the firmware draws no others in it)
-        words = [w for w in words if all(glyph_at(f, ord(ch.upper())) is not None for ch in w)]
+        words = [w for w in words if all(glyph_at(f, ord(ch if name == "X" else ch.upper())) is not None for ch in w)]
         pairs = [p for s in words for p in measure(f, font_hi, s)]
         e = sorted(pairs, key=lambda p: -abs(p[1]))
         mx = abs(e[0][1])

@@ -320,12 +320,27 @@ static int32_t send_c[CTL], send_d[CTL], send_r[CTL], wet[CTL], mix_l[CTL], mix_
 
 /* one synth part into the dry mix and the sends; a part with no voice sounding costs
  * the LFO tick and a cleared buffer only (after the DIST tail has run out) */
+static int32_t side_buf[CTL], side_s[CTL];              /* fm1-chord: a paired part's side B, and its S */
 static void mix_part(track_t *t, uint32_t n)
 {
     int32_t *b = part_buf;
-    uint32_t i;
+    uint32_t i, paired = trk_pair[t - trk], nr;
     mod_begin(t);                                       /* the matrix's per-block values into t->p (mod.c) */
-    if (track_render(t, b, n))
+    if (paired) {                                       /* STEREO partners: side A into b, side B into side_buf; the
+                                                         * chain below runs on their mid, the mix adds +-S (width ~0.7) */
+        for (i = 0; i < n; i++)
+            side_buf[i] = 0;
+        render_side = side_buf;
+    }
+    nr = track_render(t, b, n);
+    render_side = 0;
+    if (paired)
+        for (i = 0; i < n; i++) {
+            int32_t a = b[i], c = side_buf[i];
+            b[i] = (a + c) >> 1;
+            side_s[i] = (((a - c) >> 1) * 23) >> 5;
+        }
+    if (nr)
         t->tail = 16;                                   /* blocks of DIST state to run out after the last voice */
     else if ((!t->tail || !t->p[P_DIST] || !--t->tail) && !slicer_busy(t)) {
         slicer_track(t, 0, n);                          /* (the SLICER's step clock runs on) */
@@ -346,6 +361,7 @@ static void mix_part(track_t *t, uint32_t n)
         for (i = 0; i < n; i++) {
             int32_t x = ((b[i] >> 2) * lvl) >> 10, a = x < 0 ? -x : x;   /* pre-shift: 8 loud voices */
             int32_t xs = clamp(x, -xmax, xmax);         /* sends: mulq15 would overflow */
+            int32_t s = paired ? ((side_s[i] >> 2) * lvl) >> 10 : 0;   /* the partners' side */
             if (a > pk)
                 pk = a;
             if (c)
@@ -354,8 +370,8 @@ static void mix_part(track_t *t, uint32_t n)
                 send_d[i] += mulq15(xs, d);
             if (r)
                 send_r[i] += mulq15(xs, r);
-            mix_l[i] += (x * gl) >> 12;
-            mix_r[i] += (x * gr) >> 12;
+            mix_l[i] += ((x * gl) >> 12) + s;
+            mix_r[i] += ((x * gr) >> 12) - s;
         }
         t->peak = pk;
     }
@@ -364,6 +380,7 @@ static void mix_part(track_t *t, uint32_t n)
 }
 
 /* the master with the FX layer's effects between its level and master_out (perform.c) */
+#include "hcfx.c"                                       /* fm1-chord: the HiChord master effects (hc_master) */
 static __attribute__((noinline)) void perf_master(int32_t *out, uint32_t n)
 {
     uint32_t i;
@@ -374,6 +391,7 @@ static __attribute__((noinline)) void perf_master(int32_t *out, uint32_t n)
     perf_block(mix_l, mix_r, n);
     for (i = 0; i < n; i++) {
         int32_t l = mix_l[i], r = mix_r[i];
+        hc_master(&l, &r);
         master_out(&l, &r);
         out[2u * i] = l;
         out[2u * i + 1u] = r;
@@ -400,6 +418,7 @@ static void mix_block(int32_t *out, uint32_t n)
     for (i = 0; i < n; i++) {
         int32_t l = (((mix_l[i] + wet[i]) >> 2) * (int32_t)song.master_q12) >> 10;
         int32_t r = (((mix_r[i] + wet[i]) >> 2) * (int32_t)song.master_q12) >> 10;
+        hc_master(&l, &r);                              /* fm1-chord: the FILTER wheel, HI-PASS, FLANGER, TAPE */
         master_out(&l, &r);
         out[2u * i] = l;
         out[2u * i + 1u] = r;

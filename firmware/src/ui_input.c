@@ -144,9 +144,15 @@ static uint32_t key_leds(void)
  * as dark. Each picture is
  * built off-line and copied one byte per column, the glow first: an LED going from lit to dim never has a dark
  * frame */
+static int hui_active(void);                        /* hui.c (fm1-chord) */
+static void hui_leds(void);
 static void ui_leds(void)
 {
     uint8_t nl[FM1_NCOL] = {0}, nd[FM1_NCOL] = {0}, own[FM1_NCOL] = {0};
+    if (hui_active()) {
+        hui_leds();
+        return;
+    }
     uint32_t k, c;
     uint32_t fam = cur_fam();
     int keys_map = keys_own();
@@ -669,9 +675,23 @@ static void ui_notices(void)
     }
 }
 
+static int hui_active(void);                       /* hui.c (fm1-chord): the HiChord UI is up */
+static void hui_input(void);
+static void hui_resume(void);
 static void ui_input(void)
 {
-    uint32_t pressed = fm1_input_edges(0), notes = fm1_input_note_edges(), now = fm1_ticks(), id, b, k;
+    uint32_t pressed, notes, now, id, b, k;
+    if (hui_active()) {                                 /* the HiChord UI (hui.c) */
+        hui_input();
+        return;
+    }
+    pressed = fm1_input_edges(0);
+    notes = fm1_input_note_edges();
+    now = fm1_ticks();
+    if (((fm1_in.buttons >> panel.btn[B_HOME]) & 1u) && ((pressed >> panel.btn[B_SAVE]) & 1u)) {
+        hui_resume();                                   /* SAVE with HOME held: back to the HiChord UI */
+        return;
+    }
     uint32_t home = btn_hold(&ui.home_t0, B_HOME, now, 1);
     uint32_t rec = btn_hold(&ui.rec_t0, B_REC, now, 0);
     uint32_t seq = btn_hold(&ui.seq_t0, B_SEQ, now, !ui.menu && !ui.confirm);

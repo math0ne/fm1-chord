@@ -85,6 +85,10 @@ static struct { uint32_t stage; } felucca_dbg;
 #include "../firmware/src/ui_layer.c"
 #include "../firmware/src/upreset.c"
 #include "../firmware/src/project.c"
+#ifndef HUI_DEFAULT
+#define HUI_DEFAULT 0                                 /* (these tests drive Felucca's UI) */
+#endif
+#include "../firmware/src/hui.c"
 
 static int check(const char *what, int ok)
 {

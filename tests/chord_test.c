@@ -35,7 +35,7 @@ static int chord_is(uint32_t r, const uint8_t *want)
     uint8_t out[CHORD_MAX];
     uint32_t n = chord_build(&trk[0], r, out), i;
     for (i = 0; i < n; i++) if (want[i] != out[i]) return 0;
-    return i == CHORD_MAX || !want[i];
+    return i >= SHAPE_MAX || !want[i];   /* (the expectations hold at most SHAPE_MAX notes) */
 }
 static int name_is(uint32_t r, const char *want)
 {

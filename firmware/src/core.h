@@ -130,6 +130,8 @@ typedef struct {
     uint32_t age;
     uint8_t mvel;                /* mod.c: the note-on velocity (before UNISON scaling) and RAND of the note */
     int16_t mrnd;
+    uint8_t pair;                /* fm1-chord: 1 = a stereo partner (voice.c): detuned, the other side */
+    uint8_t side;                /* fm1-chord: the side it renders to when the part is paired (fx.c mix_part): 0 A, 1 B */
 } voice_t;
 
 typedef struct {                 /* per-voice control-rate modulation, computed in voice.c */

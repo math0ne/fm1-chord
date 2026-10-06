@@ -324,7 +324,10 @@ static void graph_chord(const track_t *t, uint16_t c)
     }
     if (trk_vmode(t) != V_POLY)
         cap = "ROOT ONLY";                              /* MONO / LEGATO / UNISON */
-    chord_name(b, (uint32_t)r, mask);
+    if (chord_last[k].n && chord_last[k].name[0])       /* CH_HI: its own name (hichord.c) */
+        str_cpy(b, chord_last[k].name, 12);
+    else
+        chord_name(b, (uint32_t)r, mask);
     cv_text_on(14, 8, &AF_M, b, T_TEXT, T_SURF);
     cv_text_r(226, 12, &AF_S, cap, T_MID, T_SURF);
     lo = nn[0] - nn[0] % 12u;

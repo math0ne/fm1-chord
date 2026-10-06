@@ -12,6 +12,10 @@
  * declicks it); one of the part's own is restarted in place, as before. Extra UNISON
  * voices only start when there is room. */
 static uint32_t vage;                                   /* voice ages: one clock for every part */
+/* fm1-chord: STEREO partners (hichord.c hc_apply): a POLY note of a paired part starts a second voice, detuned
+ * (PAIR_FINE: ~8 cents) on the other side; fx.c mix_part renders the two sides and spreads them */
+static uint8_t trk_pair[NTRK];
+#define PAIR_FINE 20
 static int32_t lfo_wave(track_t *t, uint32_t ph)
 {
     switch (t->p[P_LWAVE]) {
@@ -107,8 +111,8 @@ static uint32_t voice_victim(const track_t *self, int soft, track_t **pp)
                 continue;
             if (!v->gate)
                 c = 1;                                  /* released */
-            else if (mode != V_POLY && i > 0)
-                c = 2;                                  /* extra UNISON, or a voice left by a mode / cap change */
+            else if ((mode != V_POLY && i > 0) || v->pair)
+                c = 2;                                  /* extra UNISON, a stereo partner, or a voice left by a mode / cap change */
             else if (!soft && mode == V_POLY && i != low)
                 c = 3;                                  /* held, not the bass */
             else
@@ -171,7 +175,7 @@ static voice_t *voice_alloc(track_t *t, uint32_t note)
             return voice_reuse(t, v);
     }
     for (i = 0; i < np; i++) {
-        if (t->v[i].active && t->v[i].note == note)
+        if (t->v[i].active && t->v[i].note == note && !t->v[i].pair)
             return voice_reuse(t, &t->v[i]);
         nfree += !t->v[i].active;
     }
@@ -361,10 +365,31 @@ static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
     }
     if (mode == V_POLY) {
         voice_t *v = voice_alloc(t, note);
+        int glide = t->p[P_GLIDE] != 0 && !ENGINES[t->engine]->oneshot;
         t->nmono = 0;                                   /* no stale mono stack after a mode change */
         t->mono_note = 0;
         v->fine = 0;
-        voice_start(t, v, note, vel, t->p[P_GLIDE] != 0 && !ENGINES[t->engine]->oneshot);
+        v->pair = 0;
+        v->side = (uint8_t)(trk_pair[t - trk] ? note & 1u : 0u);
+        voice_start(t, v, note, vel, glide);
+        if (trk_pair[t - trk] && !ENGINES[t->engine]->oneshot) {   /* its partner: a free voice, never stolen for */
+            uint32_t np = trk_nvoice(t), k;
+            for (k = 0; k < np; k++)
+                if (t->v[k].active && t->v[k].note == note && t->v[k].pair)
+                    break;                              /* (the note's partner sounds: retrigger it) */
+            if (k == np && voices_busy() < NVOICE)
+                for (k = 0; k < np && t->v[k].active; k++)
+                    ;
+            if (k < np) {
+                voice_t *w = &t->v[k];
+                w->fine = (note & 1u) ? PAIR_FINE : -PAIR_FINE;
+                w->pair = 1;
+                w->side = (uint8_t)!v->side;
+                voice_start(t, w, note, vel, glide);
+                if (!ENGINES[t->engine]->sampled)
+                    w->ph[0] += 0x40000000u;            /* (a quarter turn: no phase stacking with its main voice) */
+            }
+        }
         return;
     }
     {
@@ -510,6 +535,7 @@ static int32_t env_tick(track_t *t, voice_t *v)
 /* render one block of a part into out (cleared here); returns the voices rendered */
 /* Channel bend is live performance state, outside projects/presets. Q8 semitones. */
 static int32_t midi_bend_q8[NTRK], midi_bend_target[NTRK];
+static int32_t *render_side;                            /* fm1-chord: side B of a paired part (fx.c mix_part), 0 = mono */
 static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
 {
     const engine_t *e = ENGINES[t->engine];
@@ -593,7 +619,7 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
         m.shape = (64 << 8) + ((lfo * p[P_LD_SHP]) >> 7) + ((m.envq15 * p[P_ED_SHP]) >> 7);
         if (mod.on)                                     /* the modulation matrix (mod.c) */
             mod_voice(t, v, &m, v->fine + tune_fine + bend_fine);
-        e->render(t, v, out, n, &m);
+        e->render(t, v, render_side && v->side ? render_side : out, n, &m);
         nr++;
     }
     if (fade) {
