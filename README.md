@@ -20,13 +20,12 @@ Three menus on three buttons, colour-coded like the HiChord's: **SCL** key (grey
 
 ![controls](screenshots/controls.png)
 
-| | |
-|---|---|
-| ![home](screenshots/home_c7.png) | ![effects](screenshots/home_fx.png) |
-| ![key menu](screenshots/menu_key.png) | ![sound menu](screenshots/menu_sound.png) |
-| ![mode menu](screenshots/menu_mode.png) | ![looper](screenshots/menu_looper.png) |
-| ![sequencer](screenshots/mode_sequencer.png) | ![drum loops](screenshots/mode_drumloop.png) |
-| ![mixer](screenshots/mode_mixer.png) | ![chord hiro](screenshots/mode_hiro.png) |
+| | | |
+|---|---|---|
+| ![home](screenshots/home_c7.png) | ![effects](screenshots/home_fx.png) | ![key menu](screenshots/menu_key.png) |
+| ![sound menu](screenshots/menu_sound.png) | ![mode menu](screenshots/menu_mode.png) | ![looper](screenshots/menu_looper.png) |
+| ![sequencer](screenshots/mode_sequencer.png) | ![drum loops](screenshots/mode_drumloop.png) | ![mixer](screenshots/mode_mixer.png) |
+| ![chord hiro](screenshots/mode_hiro.png) | ![ear trainer](screenshots/mode_ear.png) | ![drums](screenshots/mode_drum.png) |
 
 Status: complete and tested on the host simulator; not yet run on hardware. Spec and notes in
 [spec/docs](spec/docs). Build and flash: [spec/docs/05-dev-setup.md](spec/docs/05-dev-setup.md).

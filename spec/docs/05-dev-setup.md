@@ -33,6 +33,7 @@ Results:
 | `tools/get_toolchain.sh` | 25 MB download, no login needed |
 | Felucca `./build.sh` | 6.5 s; `felucca.bin` 476,996 B; RAM 88,884 / 98,304; pool 329,952 / 344,064 |
 | Felucca `tests/run_tests.sh` | ALL HOST TESTS PASSED, 2 min 10 s (needs `AC79_SDK=$HOME/fw-AC79_AIoT_SDK`) |
+| `vendor/ac79/` (2026-10-06) | the three SDK files the package needs, vendored; `AC79_SDK=$PWD/vendor/ac79` works without the 1.1 GB checkout (CI uses it) |
 | X0X `./build.sh` | 2.4 s; `x0x.bin` 580,068 B |
 | X0X host simulator | builds and runs; `getting_started.x0x` passes every `expect` |
 
