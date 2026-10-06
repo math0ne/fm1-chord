@@ -26,17 +26,8 @@ jobs:
         if: steps.tc.outputs.cache-hit != 'true'
         run: tools/get_toolchain.sh
 
-      - name: JieLi AC79 SDK (the three files the package needs, cached)
-        id: sdk
-        uses: actions/cache@v4
-        with:
-          path: ~/fw-AC79_AIoT_SDK
-          key: ac79-sdk-V1.2.1-2023-12-13
-      - name: JieLi AC79 SDK
-        if: steps.sdk.outputs.cache-hit != 'true'
-        run: |
-          git clone --quiet --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
-            https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git ~/fw-AC79_AIoT_SDK
+      - name: JieLi AC79 SDK files (vendor/ac79: the three the package needs, Apache-2.0)
+        run: echo "AC79_SDK=$GITHUB_WORKSPACE/vendor/ac79" >> "$GITHUB_ENV"
 
       - name: Version from the tag
         id: ver
@@ -51,7 +42,7 @@ jobs:
         run: ./build.sh
 
       - name: Host tests
-        run: AC79_SDK=$HOME/fw-AC79_AIoT_SDK sh tests/run_tests.sh
+        run: sh tests/run_tests.sh
 
       - name: Build (release)
         if: steps.ver.outputs.rel != ''
