@@ -47,16 +47,15 @@ jobs:
             echo "rel=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build (dev)
-        if: steps.ver.outputs.rel == ''
+      - name: Build
         run: ./build.sh
+
+      - name: Host tests
+        run: AC79_SDK=$HOME/fw-AC79_AIoT_SDK sh tests/run_tests.sh
 
       - name: Build (release)
         if: steps.ver.outputs.rel != ''
         run: ./build.sh --release "${{ steps.ver.outputs.rel }}"
-
-      - name: Host tests
-        run: AC79_SDK=$HOME/fw-AC79_AIoT_SDK sh tests/run_tests.sh
 
       - name: Screens
         run: |
