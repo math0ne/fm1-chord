@@ -1,0 +1,127 @@
+diff --git a/rust-emulator/src/decode.rs b/rust-emulator/src/decode.rs
+index e91e661..29fa655 100644
+--- a/rust-emulator/src/decode.rs
++++ b/rust-emulator/src/decode.rs
+@@ -82,6 +82,7 @@ pub(crate) enum Wide {
+     BranchRegisterMask,
+     MemoryShift,
+     MemoryArithmeticRegister,
++    MemoryAddPacked,
+     HalfwordExtended,
+     HalfwordPostincrement,
+     BytePostincrementStore,
+@@ -136,6 +137,7 @@ pub(crate) enum Wide {
+     WordRegisterPreincrementStore,
+     WordRegisterPreincrement,
+     HalfwordRegisterPreincrement,
++    HalfwordRegisterPreincrementStore,
+     WordPostincrementStore,
+     WordPostincrementLoad,
+     MemoryIndexed,
+@@ -357,7 +359,7 @@ fn wide(h: u32, x: u32) -> Wide {
+     if h & 0xfff8 == 0xed50 || h & 0xfff8 == 0xed58 {
+         return Wide::HalfwordExtended;
+     }
+-    if h == 0xedd0 || h == 0xedd4 && x & 1 == 0 {
++    if h & 0xfffc == 0xedd0 || h & 0xfffc == 0xedd4 && x & 1 == 0 {
+         return Wide::HalfwordPostincrement;
+     }
+     if h == 0xeed2 {
+@@ -417,6 +419,9 @@ fn wide(h: u32, x: u32) -> Wide {
+     if h & 0xffe0 == 0xebc0 {
+         return Wide::MemoryAdd;
+     }
++    if h & 0xffc0 == 0xeb80 {
++        return Wide::MemoryAddPacked;
++    }
+     if h & 0xfff0 == 0xea00 {
+         return Wide::DecrementBranch;
+     }
+@@ -558,6 +563,9 @@ fn wide(h: u32, x: u32) -> Wide {
+     if h == 0xecdc && x & 15 == 2 {
+         return Wide::WordRegisterPreincrement;
+     }
++    if h == 0xeddc && x & 15 == 1 {
++        return Wide::HalfwordRegisterPreincrementStore;
++    }
+     if h == 0xeddc && matches!(x & 15, 0 | 2) {
+         return Wide::HalfwordRegisterPreincrement;
+     }
+diff --git a/rust-emulator/src/extended.rs b/rust-emulator/src/extended.rs
+index 08ca5ba..504d4df 100644
+--- a/rust-emulator/src/extended.rs
++++ b/rust-emulator/src/extended.rs
+@@ -272,7 +272,10 @@ pub(crate) fn execute(
+                     op = "halfword_extended";
+                 }
+                 Wide::HalfwordPostincrement => {
+-                    let increment = ((x >> 8) & 15) * 16 + (x & 14);
++                    // The low two opcode bits extend the even stride to a signed
++                    // ten-bit value: vendor EDD3 9F8F is h[r8++=-2] = r9.
++                    let increment = ((signed(h & 3, 2) * 256) as u32)
++                        .wrapping_add(((x >> 8) & 15) * 16 + (x & 14));
+                     let address = cpu.r[s];
+                     mem = Some((
+                         d,
+@@ -470,6 +473,14 @@ pub(crate) fn execute(
+                     )?;
+                     op = "memory_add";
+                 }
++                Wide::MemoryAddPacked => {
++                    // Vendor EB80 0480 is [r0+0] += 0x40000000: the packed
++                    // immediate of the register forms, at a signed word offset
++                    // (EBA0 is -128, EBB0 is -64; the toolchain encoder agrees).
++                    let addr = cpu.r[d].wrapping_add((signed(h & 63, 6) * 4) as u32);
++                    cpu.write(addr, cpu.read(addr, 4)?.wrapping_add(packed(x)))?;
++                    op = "memory_add_packed";
++                }
+                 Wide::DecrementBranch => {
+                     cpu.r[n] = cpu.r[n].wrapping_sub(1);
+                     if cpu.r[n] != 0 {
+@@ -919,6 +930,14 @@ pub(crate) fn execute(
+                     cpu.r[d] = value;
+                     op = "word_register_preincrement";
+                 }
++                Wide::HalfwordRegisterPreincrementStore => {
++                    // Vendor form: h[++rS=rC] = rD (EDDC, kind 1), the halfword
++                    // counterpart of the word store above: store the low
++                    // halfword at base + index, then commit the base.
++                    let address = cpu.r[s].wrapping_add(cpu.r[c]);
++                    mem = Some((d, s, address, 2, true, false, Some(address)));
++                    op = "halfword_register_preincrement_store";
++                }
+                 Wide::HalfwordRegisterPreincrement => {
+                     let address = cpu.r[s].wrapping_add(cpu.r[c]);
+                     let value = cpu.read(address, 2)?;
+diff --git a/rust-emulator/src/usb.rs b/rust-emulator/src/usb.rs
+index 7ab03d4..07066a2 100644
+--- a/rust-emulator/src/usb.rs
++++ b/rust-emulator/src/usb.rs
+@@ -8,7 +8,7 @@ pub struct Usb {
+     io: u32,
+     clock: u32,
+     sie: [u8; 16],
+-    endpoints: [[u8; 8]; 4],
++    endpoints: [[u8; 8]; 5],
+     index: usize,
+     ticks: u64,
+     deadline: u64,
+@@ -223,7 +223,7 @@ impl Usb {
+                     self.phase = 0;
+                     self.waiting = false;
+                     self.sie = [0; 16];
+-                    self.endpoints = [[0; 8]; 4];
++                    self.endpoints = [[0; 8]; 5];
+                     self.cdc_interface = None;
+                     self.cdc_endpoint = None;
+                     self.cdc_out = None;
+@@ -251,7 +251,8 @@ impl Usb {
+                 } else {
+                     let data = v as u8;
+                     if r == 14 {
+-                        if data > 3 {
++                        // EP0..EP4: Felucca 1.0.1 streams USB audio in on EP4.
++                        if data > 4 {
+                             return Err("USB endpoint index exceeds modeled controller");
+                         }
+                         self.index = data as usize;
