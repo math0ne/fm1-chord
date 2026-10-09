@@ -585,6 +585,73 @@ static int test_games(void)
     return bad;
 }
 
+static int test_fx_amount(void)
+{
+    int bad = 0;
+    track_t *t = &trk[0];
+    hc_trk_t *c = &hc.t[0];
+    hui_power_on();
+    hui_open(HU_SOUND);
+    hui.sel[HU_SOUND] = RS_REV;
+    c->rev = HRV_HALL; hc_apply(t);
+    bad += check("REVERB row: the type and the amount in effect (HALL 65)", val_is(HU_SOUND, RS_REV, "HALL 65") && t->p[P_REV] == 65);
+    turn(EN_K4, 3);
+    bad += check("  KNOB 4 on the row: the amount (77), the send follows", c->rev_amt == 77u && t->p[P_REV] == 77 &&
+                 val_is(HU_SOUND, RS_REV, "HALL 77"));
+    turn(EN_K4, -40);
+    bad += check("  down to the floor of 1", c->rev_amt == 1u && t->p[P_REV] == 1);
+    c->rev = 0; c->rev_amt = 0; hc_apply(t);
+    bad += check("  OFF: the type alone", val_is(HU_SOUND, RS_REV, "OFF") && t->p[P_REV] == 0);
+    turn(EN_K4, 1);
+    bad += check("  KNOB 4 on an OFF effect: on at its first type, the amount", c->rev == HRV_ROOM && c->rev_amt == 54u);
+    hui.sel[HU_SOUND] = RS_TREM;
+    c->trem = 2; c->trem_amt = 0; hc_apply(t);
+    turn(EN_K4, -5);
+    bad += check("TREMOLO row: KNOB 4 is the depth (90 - 20)", c->trem_amt == 70u && t->p[P_LD_AMP] == 70);
+    hui.sel[HU_SOUND] = RS_FLG;
+    c->flg = 1; hc_apply(t);
+    turn(EN_K4, 2);
+    bad += check("FLANGER row: KNOB 4 is the wet amount (64 + 8), hcfx follows", c->flg_amt == 72u && hcfx.flg_amt == 72u);
+    hui.sel[HU_SOUND] = RS_SOUND;
+    {
+        int32_t bpm = song.g[G_BPM];
+        turn(EN_K4, 1);
+        bad += check("any other row: KNOB 4 is the tempo", song.g[G_BPM] == bpm + 1);
+    }
+    c->rev = 0; c->rev_amt = 0; c->trem = 0; c->trem_amt = 0; c->flg = 0; c->flg_amt = 0; hc_apply(t);
+    hui_open(HU_HOME);
+    return bad;
+}
+
+/* the HiChord's way to play over drums: the drum loop recorded into a looper layer, the live
+ * instrument moving to the next layer, PLAY mode there: chords over the loop */
+static int test_drums_under_chords(void)
+{
+    int bad = 0;
+    uint32_t i, drums = 0, chords = 0;
+    hui_power_on();
+    hc.t[0].bass = HB_OFF; hc_apply(&trk[0]);
+    hui_mode_set(&trk[0], HP_DRUMLOOP);
+    press(B_REC);                                      /* ARMED */
+    press(B_REC);                                      /* REC: the loop's first bar */
+    run_ms2(2200);
+    if (hcl.l[0].state == HLS_REC) press(B_REC);       /* (a free first layer: closed by hand) */
+    run_ms2(100);
+    bad += check("DRUM LOOP into the looper: layer 1 plays, the live instrument moved on",
+                 hcl.l[0].state == HLS_PLAY && song.sel == 1u);
+    hui_mode_set(TSEL, HP_PLAY);
+    run_ms2(50);                                       /* (the mode change's release of the track lands in a block) */
+    bad += check("  PLAY mode on the new layer: the chord sound is back (not DRUM)", TSEL->eng_req != ENGI_DRUM && hc.t[1].play == HP_PLAY);
+    key_down(7);
+    run_ms2(1200);
+    for (i = 0; i < NVOICE; i++) { drums += trk[0].v[i].active; chords += trk[1].v[i].active && trk[1].v[i].gate; }
+    bad += check("  a chord held over the loop: chord voices on layer 2, drum voices still on layer 1", chords >= 3u && drums >= 1u);
+    key_up(7);
+    hcl_clear_all();
+    hui_mode_set(&trk[0], HP_PLAY);
+    return bad;
+}
+
 static int test_live_persist(void)
 {
     int bad = 0;
@@ -611,7 +678,8 @@ static int test_live_persist(void)
 int main(void)
 {
     int bad = test_boot_and_menus() + test_key_menu() + test_sound_menu() + test_mode_menu_knobs() + test_presets() +
-              test_draw_and_handover() + test_looper() + test_seq_drums_mixer() + test_games() + test_live_persist();
+              test_draw_and_handover() + test_looper() + test_seq_drums_mixer() + test_games() + test_live_persist() +
+              test_fx_amount() + test_drums_under_chords();
     printf("%s\n", bad ? "HUI TEST FAILED" : "hichord ui test passed");
     return bad != 0;
 }

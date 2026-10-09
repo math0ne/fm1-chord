@@ -123,6 +123,45 @@ static uint32_t hui_rand(uint32_t n)
 static hc_trk_t *hui_c(void) { return &hc.t[song.sel]; }
 static void hui_apply(void) { hc_apply(TSEL); }
 
+/* the effect rows with an amount (KNOB 4): REVERB, DELAY, CHORUS (their sends), FLANGER (its wet),
+ * TREMOLO (its depth). The amount in effect: the one set, else the type's own */
+static int hui_fx_row(uint32_t row) { return row == RS_REV || row == RS_DLY || row == RS_CHO || row == RS_FLG || row == RS_TREM; }
+static uint32_t hui_fx_amount(const hc_trk_t *c, uint32_t row)
+{
+    static const uint8_t REV_DEF[HRV_COUNT] = {0, 50, 65, 60, 60, 90}, CHO_DEF[HCH_COUNT] = {0, 40, 60, 85, 110};
+    switch (row) {
+    case RS_REV: return c->rev_amt ? c->rev_amt : REV_DEF[c->rev % HRV_COUNT];
+    case RS_DLY: return c->dly_amt ? c->dly_amt : 55u;
+    case RS_CHO: return c->cho_amt ? c->cho_amt : CHO_DEF[c->cho % HCH_COUNT];
+    case RS_FLG: return c->flg_amt ? c->flg_amt : 64u;
+    default: return c->trem_amt ? c->trem_amt : 90u;
+    }
+}
+static uint8_t *hui_fx_amount_of(hc_trk_t *c, uint32_t row)
+{
+    return row == RS_REV ? &c->rev_amt : row == RS_DLY ? &c->dly_amt : row == RS_CHO ? &c->cho_amt :
+           row == RS_FLG ? &c->flg_amt : &c->trem_amt;
+}
+/* the row's value: the type, and the amount when the effect is on ("HALL 65") */
+static void hui_fx_value(char *b, const char *type, uint32_t on, uint32_t amount)
+{
+    str_cpy(b, type, 16);
+    if (on) {
+        uint32_t len = str_len(b);
+        b[len] = ' ';
+        fmt_int(b + len + 1u, (int32_t)amount);
+    }
+}
+/* KNOB 4 on an effect row: the amount (an effect that is OFF comes on at its first type) */
+static void hui_fx_turn(hc_trk_t *c, uint32_t row, int32_t s)
+{
+    uint8_t *amt = hui_fx_amount_of(c, row);
+    uint8_t *on = row == RS_REV ? &c->rev : row == RS_DLY ? &c->dly : row == RS_CHO ? &c->cho : row == RS_FLG ? &c->flg : &c->trem;
+    if (!*on)
+        *on = 1;
+    *amt = (uint8_t)clamp((int32_t)hui_fx_amount(c, row) + s * 4, 1, 127);
+}
+
 /* the key (ROOT) and the scale are the HiChord's: global, every track's */
 static void hui_key_set(int32_t root)
 {
@@ -173,7 +212,7 @@ static void hui_track_init(track_t *t)
 /* a preset's own state packed into HC_PRESET_BYTES (settings_persist.c hc_presets): magic, the tracks' settings,
  * the key inversions and locks. Saving: the project slot (ui.c project_save: sounds, key, tempo, the Felucca
  * parameters) and this; loading: both, then hc_apply */
-#define HCP_MAGIC 0x48435031u                           /* "HCP1" */
+#define HCP_MAGIC 0x48435032u                           /* "HCP2": hc_trk_t grew the effect amounts */
 static void hc_preset_pack(uint8_t *b)
 {
     uint32_t i, k = 4;
@@ -363,11 +402,11 @@ static int hui_row_value(uint32_t screen, uint32_t row, char *b)
             break;
         }
         case RS_HP: str_cpy(b, c->hp ? "ON" : "OFF", 16); break;
-        case RS_REV: str_cpy(b, HRV_NAME[c->rev % HRV_COUNT], 16); break;
-        case RS_DLY: str_cpy(b, HDL_NAME[c->dly % HDL_COUNT], 16); break;
-        case RS_CHO: str_cpy(b, HCH_NAME[c->cho % HCH_COUNT], 16); break;
-        case RS_FLG: str_cpy(b, HFL_NAME[c->flg % HFL_COUNT], 16); break;
-        case RS_TREM: str_cpy(b, HTR_NAME[c->trem % HTR_COUNT], 16); break;
+        case RS_REV: hui_fx_value(b, HRV_NAME[c->rev % HRV_COUNT], c->rev, hui_fx_amount(c, RS_REV)); break;
+        case RS_DLY: hui_fx_value(b, HDL_NAME[c->dly % HDL_COUNT], c->dly, hui_fx_amount(c, RS_DLY)); break;
+        case RS_CHO: hui_fx_value(b, HCH_NAME[c->cho % HCH_COUNT], c->cho, hui_fx_amount(c, RS_CHO)); break;
+        case RS_FLG: hui_fx_value(b, HFL_NAME[c->flg % HFL_COUNT], c->flg, hui_fx_amount(c, RS_FLG)); break;
+        case RS_TREM: hui_fx_value(b, HTR_NAME[c->trem % HTR_COUNT], c->trem, hui_fx_amount(c, RS_TREM)); break;
         case RS_LFO: str_cpy(b, HLF_NAME[c->lfo % HLF_COUNT], 16); break;
         case RS_GLIDE: str_cpy(b, HGL_NAME[c->glide % HGL_COUNT], 16); break;
         case RS_DRIVE: str_cpy(b, HDR_NAME[c->drive % HDR_COUNT], 16); break;
@@ -692,7 +731,10 @@ static void hui_input(void)
         hui_apply();
     }
     if ((s = panel_enc(EN_K4)) != 0) {
-        song.g[G_BPM] = (int16_t)clamp(song.g[G_BPM] + s, GP[G_BPM].min, GP[G_BPM].max);
+        if (sc == HU_SOUND && hui_fx_row(hui.sel[sc]))   /* an effect row: its amount */
+            hui_fx_turn(c, hui.sel[sc], s);
+        else
+            song.g[G_BPM] = (int16_t)clamp(song.g[G_BPM] + s, GP[G_BPM].min, GP[G_BPM].max);
         hui_apply();
     }
     {   /* the looper: REC cycles the layer (held: clears it), PLAY pauses / resumes, SEQ shows the LOOPER screen */
@@ -823,7 +865,7 @@ static void hui_draw_head(void)
 /* the footer: the four menu buttons, coloured (HOME); a menu's hints */
 static void hui_draw_foot(void)
 {
-    uint32_t sig = hui.screen * 7u + 1u;
+    uint32_t sig = hui.screen * 7u + 1u + (hui.screen == HU_SOUND && hui_fx_row(hui.sel[HU_SOUND]) ? 3u : 0u);
     if (!hui.force && sig == hui.sig[3])
         return;
     hui.sig[3] = sig;
@@ -846,6 +888,11 @@ static void hui_draw_foot(void)
             h[n++] = (hint_t){KC_SELECT, "LAYER", "LAYR", T_KEY, T_INK};
             h[n++] = (hint_t){KC_REC, "REC", "REC", HC_RED, HC_INK};
             h[n++] = (hint_t){KC_PLAY, "PLAY", "PLAY", HC_GREEN, HC_INK};
+            h[n++] = (hint_t){KC_HOME, "BACK", "BACK", T_KEY, T_INK};
+        } else if (hui.screen == HU_SOUND && hui_fx_row(hui.sel[HU_SOUND])) {   /* an effect row: KNOB 4 = its amount */
+            h[n++] = (hint_t){KC_SELECT, "ROW", "ROW", T_KEY, T_INK};
+            h[n++] = (hint_t){KC_OCTUP, "TYPE", "TYPE", T_KEY, T_INK};
+            h[n++] = (hint_t){KC_K4, "AMOUNT", "AMT", HC_YELLOW, HC_INK};
             h[n++] = (hint_t){KC_HOME, "BACK", "BACK", T_KEY, T_INK};
         } else {
             h[n++] = (hint_t){KC_SELECT, "ROW", "ROW", T_KEY, T_INK};

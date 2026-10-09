@@ -8,6 +8,7 @@
  * before hichord.c). Everything bypasses bit-exactly when off: the golden renders stay. */
 static struct {
     uint8_t filt, hp, flg, tape;         /* the FILTER wheel on, HI-PASS on, HFL_*, HTP_* */
+    uint8_t flg_amt;                     /* the flanger's wet amount, 64 = the HiChord's half */
     uint8_t cutoff;                      /* 0..127 -> PF_SVF index 0..63 */
     uint8_t line;                        /* OUT LEVEL LINE: -10 dB */
     uint8_t click;                       /* the metronome (hclooper.c): 1 a beat, 2 the bar's first; taken here */
@@ -119,7 +120,7 @@ static inline void hc_master(int32_t *l, int32_t *r)
             int32_t d = hcfx_tap(hcfx.fl_buf[k], HCFX_FL_LEN, hcfx.fl_w, back);
             int32_t x = in[k] + ((d * FB[m]) >> 15);
             hcfx.fl_buf[k][hcfx.fl_w] = hcfx_q15(x);
-            out[k] = in[k] + (d >> 1);
+            out[k] = in[k] + ((d * (int32_t)(hcfx.flg_amt ? hcfx.flg_amt : 64u)) >> 7);
         }
         hcfx.fl_w = (hcfx.fl_w + 1u) % HCFX_FL_LEN;
         *l = out[0];

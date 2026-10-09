@@ -88,6 +88,8 @@ typedef struct {                 /* a track's HiChord settings (a preset stores 
     uint8_t kit;                 /* DRUM / DRUM LOOP: Felucca's DRUM KIT (STD HAND CYM H+CYM) */
     uint8_t dl_style, dl_var;    /* DRUM LOOP: the style and its variation */
     uint8_t sound_saved;         /* the sound before DRUM mode took the track (hui.c) */
+    uint8_t rev_amt, dly_amt, cho_amt, flg_amt, trem_amt;   /* KNOB 4 on the effect's row (hui.c): the amount,
+                                                          * 1..127; 0 = the type's own (the HiChord's app CCs) */
 } hc_trk_t;
 
 typedef struct {                 /* an arp pattern: two notes a step, slot roles 0..4 (ROOT 3RD 5TH 7TH 9TH/11TH) */
@@ -218,7 +220,7 @@ static void hc_apply(track_t *t)
     t->p[P_LWAVE] = 0;
     t->p[P_LFADE] = 0;
     t->p[P_LD_PIT] = (int16_t)(c->lfo == HLF_OFF ? 0 : c->lfo == HLF_LOW ? 2 : c->lfo == HLF_MED ? 4 : 7);
-    t->p[P_LD_AMP] = (int16_t)(c->trem ? 90 : 0);
+    t->p[P_LD_AMP] = (int16_t)(c->trem ? (c->trem_amt ? c->trem_amt : 90) : 0);
     if (c->trem) {
         static const uint8_t TR_DEN[HTR_COUNT] = {1, 1, 2, 4, 6, 8};
         uint32_t hz100 = (uint32_t)song.g[G_BPM] * 100u / 60u * TR_DEN[c->trem % HTR_COUNT], v;
@@ -230,9 +232,9 @@ static void hc_apply(track_t *t)
     }
     /* drive, the sends, the buses */
     t->p[P_DIST] = DRIVE_V[c->drive % HDR_COUNT];
-    t->p[P_CHOR] = CHO_SEND[c->cho % HCH_COUNT];
-    t->p[P_DLY] = (int16_t)(c->dly ? 55 : 0);
-    t->p[P_REV] = REV_SEND[c->rev % HRV_COUNT];
+    t->p[P_CHOR] = (int16_t)(c->cho ? (c->cho_amt ? c->cho_amt : CHO_SEND[c->cho % HCH_COUNT]) : 0);
+    t->p[P_DLY] = (int16_t)(c->dly ? (c->dly_amt ? c->dly_amt : 55) : 0);
+    t->p[P_REV] = (int16_t)(c->rev ? (c->rev_amt ? c->rev_amt : REV_SEND[c->rev % HRV_COUNT]) : 0);
     if (c->cho) {
         song.g[G_CRATE] = CHO_RATE[c->cho % HCH_COUNT];
         song.g[G_CDEPTH] = CHO_DEPTH[c->cho % HCH_COUNT];
@@ -261,6 +263,7 @@ static void hc_apply(track_t *t)
         hcfx.filt = c->filt;
         hcfx.hp = c->hp;
         hcfx.flg = c->flg;
+        hcfx.flg_amt = c->flg_amt ? c->flg_amt : 64;
         hcfx.tape = c->tape;
         hcfx.cutoff = c->cutoff;
     }

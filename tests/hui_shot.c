@@ -87,6 +87,9 @@ int main(int argc, char **argv)
     press(B_FX);
     hframes(3);
     ppm(argv[1], "menu_sound");
+    hui.sel[HU_SOUND] = RS_REV; hframes(3);              /* an effect row: the amount, KNOB 4's hint */
+    ppm(argv[1], "menu_sound_amount");
+    hui.sel[HU_SOUND] = RS_SOUND; hframes(2);
     turn(EN_SELECT, 9);
     hframes(3);
     ppm(argv[1], "menu_sound_fx");

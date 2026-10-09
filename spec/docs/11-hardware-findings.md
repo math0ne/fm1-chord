@@ -71,6 +71,23 @@ one block later (`hcd_loop_release`); the host render then shows the hits ringin
 - The red keycaps (EDIT, REC) used near-white text; the panel LCD washes that out, so they use the
   dark ink like the yellow and green caps.
 
+## Effect amounts on KNOB 4 (beyond the HiChord's device UI)
+
+The HiChord device only cycles each effect's type; the amounts are its app's CCs, which we do not
+speak. Now, in the SOUND menu with the REVERB, DELAY, CHORUS, FLANGER or TREMOLO row selected,
+KNOB 4 sets the amount (the reverb, delay and chorus sends, the flanger's wet, the tremolo's depth;
+1..127, 4 a click); the row reads "HALL 65", the footer shows the K4 "AMOUNT" hint, and a knob
+turn on an OFF effect turns it on at its first type. Elsewhere KNOB 4 stays the tempo. The amounts
+live in `hc_trk_t` (preset format HCP2: earlier P1..P4 and the live state read as empty once) and
+travel with the presets and across power-off.
+
+## Chords over drums
+
+As on the HiChord: record the drum loop into a looper layer, play on the next. DRUM LOOP mode,
+REC (armed), REC again (recording one loop; BARS on the LOOPER screen, or REC a third time to close a
+free first layer), the layer plays and the live instrument moves to layer 2; ALGORITHM knob to PLAY
+(the chord sound returns) and play. `tests/hui_test.c test_drums_under_chords` runs this path.
+
 ## Numbers
 
 | | |
