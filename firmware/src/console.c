@@ -159,6 +159,7 @@ static void con_hc(const char *p)
     con_puts(" flg "); fmt_int(b, hcfx.flg); con_puts(b);
     con_puts(" tape "); fmt_int(b, hcfx.tape); con_puts(b);
     con_puts(" cutoff "); fmt_int(b, hcfx.cutoff); con_puts(b);
+    con_puts(" res "); fmt_int(b, hcfx.res); con_puts(b);
     con_puts(" lc "); fmt_int(b, hcfx.lc); con_puts(b);
     con_puts("\r\nlk ");
     for (i = 0; i < 3u; i++) { fmt_int(b, hcfx.lk[i]); con_puts(b); con_puts(" "); }

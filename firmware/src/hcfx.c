@@ -42,15 +42,15 @@ static void hcfx_coef(void)
     if (hcfx.res) {                                      /* RESONANCE: the damping k from the table's 1 down to 0.1.
                                                           * The table is Simper's SVF at k = 1 (a1 = 1 / (1 + g (g + k)),
                                                           * a2 = g a1, a3 = g a2): g comes back from a2 / a1 */
-        int64_t a1 = PF_SVF[i][0], a2 = PF_SVF[i][1];
-        int64_t g = a1 ? (a2 << 14) / a1 : 0;            /* Q14 */
-        int64_t k = 16384 - (int64_t)hcfx.res * 14746 / 127;   /* Q14: 1.0 - 0.9 res */
-        int64_t den = 16384 + ((g * (g + k)) >> 14);     /* Q14: 1 + g (g + k) */
-        a1 = den > 0 ? ((int64_t)1 << 28) / den : 16384;
-        a2 = (g * a1) >> 14;
+        int32_t a1 = PF_SVF[i][0], a2 = PF_SVF[i][1];    /* (32-bit divisions: no 64-bit runtime on the part) */
+        int32_t g = a1 ? (a2 << 14) / a1 : 0;            /* Q14, up to ~2.2 */
+        int32_t k = 16384 - (int32_t)hcfx.res * 14746 / 127;   /* Q14: 1.0 - 0.9 res */
+        int32_t den = 16384 + (int32_t)(((int64_t)g * (g + k)) >> 14);   /* Q14: 1 + g (g + k) */
+        a1 = den > 0 ? (1 << 28) / den : 16384;
+        a2 = (int32_t)(((int64_t)g * a1) >> 14);
         hcfx.lk[0] = (int16_t)a1;
         hcfx.lk[1] = (int16_t)a2;
-        hcfx.lk[2] = (int16_t)((g * a2) >> 14);
+        hcfx.lk[2] = (int16_t)(((int64_t)g * a2) >> 14);
     }
     hcfx.lr = hcfx.res;
     hcfx.hk[0] = PF_SVF[16][0];                          /* ~150 Hz */
