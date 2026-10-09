@@ -127,6 +127,12 @@ int main(int argc, char **argv)
     hc.t[0].dl_style = DL_FUNK; hc.t[0].dl_var = DV_BUSY;
     hframes(3);
     ppm(argv[1], "mode_drumloop");
+    hcl.bars = 2;                                        /* recording the loop into layer 1: the strip, bar 2 of 2 */
+    press(B_REC); press(B_REC);
+    for (i = 0; i < 60u; i++) { events_block(CTL); events_block(CTL); events_block(CTL); events_block(CTL); }
+    hframes(3);
+    ppm(argv[1], "mode_drumloop_rec");
+    hcl_clear_all(); hcl.bars = 0; hframes(2);
     hui_mode_set(&trk[0], HP_MIXER);
     trk[1].p[P_MUTE] = 1; trk[2].p[P_LEVEL] = 70;
     hframes(3);

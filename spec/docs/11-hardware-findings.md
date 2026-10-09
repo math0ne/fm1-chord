@@ -88,6 +88,14 @@ REC (armed), REC again (recording one loop; BARS on the LOOPER screen, or REC a 
 free first layer), the layer plays and the live instrument moves to layer 2; ALGORITHM knob to PLAY
 (the chord sound returns) and play. `tests/hui_test.c test_drums_under_chords` runs this path.
 
+## The looper on the drum screens
+
+To time the bounce, the DRUM and DRUM LOOP screens show a looper strip in place of the "REC: BOUNCE
+INTO THE LOOPER" line: the four layers' dots (green playing, red recording, yellow armed; the live
+one ringed), the live layer's state, and a bar of the loop with its bars ticked. While recording it
+reads "REC  BAR n" and fills red; a free first recording fills against BARS (or the bar it is in).
+`hui_shot` renders it as `mode_drumloop_rec`.
+
 ## Numbers
 
 | | |

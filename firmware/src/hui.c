@@ -928,6 +928,7 @@ static void hui_draw_foot(void)
 
 /* HOME in SEQUENCER, DRUM, DRUM LOOP and MIXER mode: the steps, the pads, the loop, the layers (the chord area
  * and the keyboard strip: 190 rows from HU_HEAD) */
+static void hui_loop_strip(int32_t y);                 /* (below) */
 static void hui_draw_mode_body(void)
 {
     const hc_trk_t *c = hui_c();
@@ -976,8 +977,9 @@ static void hui_draw_mode_body(void)
         cv_blit(0, HU_HEAD);
         cv_begin(240, 66, T_BG);
         cv_text_on(4, 2, &AF_S, "WHITE KEYS: PADS   BLACK KEY: REPEAT", T_MID, T_BG);
-        cv_text_on(4, 24, &AF_M, "KIT", T_MID, T_BG);
-        cv_text_on(40, 24, &AF_M, N_DRUM_KIT[c->kit % 4u], HC_RED, T_BG);
+        cv_text_on(4, 22, &AF_M, "KIT", T_MID, T_BG);
+        cv_text_on(40, 22, &AF_M, N_DRUM_KIT[c->kit % 4u], HC_RED, T_BG);
+        hui_loop_strip(44);
         cv_blit(0, HU_HEAD + 124);
         return;
     }
@@ -1000,9 +1002,9 @@ static void hui_draw_mode_body(void)
         cv_blit(0, HU_HEAD);
         cv_begin(240, 66, T_BG);
         cv_text_on(4, 2, &AF_S, "WHITE KEY: STYLE   MODE MENU: VARIATION", T_MID, T_BG);
-        cv_text_on(4, 24, &AF_M, "KIT", T_MID, T_BG);
-        cv_text_on(40, 24, &AF_M, N_DRUM_KIT[c->kit % 4u], HC_RED, T_BG);
-        cv_text_on(4, 47, &AF_S, "REC: BOUNCE INTO THE LOOPER", T_DIM, T_BG);
+        cv_text_on(4, 22, &AF_M, "KIT", T_MID, T_BG);
+        cv_text_on(40, 22, &AF_M, N_DRUM_KIT[c->kit % 4u], HC_RED, T_BG);
+        hui_loop_strip(44);
         cv_blit(0, HU_HEAD + 124);
         return;
     }
@@ -1114,6 +1116,48 @@ static void hui_draw_mode_body(void)
     cv_blit(0, HU_HEAD + 124);
 }
 
+/* the looper on the drum screens, to time REC (the bounce): the layers' dots, the live layer's state
+ * (recording: the bar it is in), a bar of the loop with its bars ticked (a free first recording fills
+ * against BARS, or the bar it is in) */
+static void hui_loop_strip(int32_t y)
+{
+    uint32_t i, bar = beat_samples() * 4u, sel = hcl.sel % HCL_LAYERS, st = hcl.l[sel].state, total = hcl.len, pos = hcl.pos;
+    char b[24];
+    if (!bar)
+        bar = 1;
+    for (i = 0; i < HCL_LAYERS; i++) {
+        uint32_t s = hcl.l[i].state;
+        uint16_t col = s == HLS_PLAY ? HC_GREEN : s == HLS_REC ? HC_RED : s == HLS_ARMED ? HC_YELLOW : T_RAISE;
+        cv_rrect(4 + (int32_t)i * 12, y + 2, 9, 9, 4, col, T_BG);
+        if (i == sel)
+            cv_rrect(6 + (int32_t)i * 12, y + 4, 5, 5, 2, s == HLS_OFF || s == HLS_ARMED ? T_TEXT : HC_INK, col);
+    }
+    if (st == HLS_REC) {
+        uint32_t el = hc.clock - hcl.l[sel].start;
+        if (!total) {                                    /* the first layer, free: against BARS, else the bar it is in */
+            total = hcl.bars ? hcl.bars * bar : bar;
+            pos = el % total;
+        }
+        str_cpy(b, "REC  BAR ", sizeof b);
+        fmt_int(b + str_len(b), (int32_t)(el / bar) + 1);
+        cv_text_on(56, y, &AF_S, b, HC_RED, T_BG);
+    } else {
+        str_cpy(b, "LAYER ", sizeof b);
+        fmt_int(b + str_len(b), (int32_t)sel + 1);
+        str_cpy(b + str_len(b), st == HLS_PLAY ? "  PLAY" : st == HLS_ARMED ? "  ARMED" : "  OFF", sizeof b - str_len(b));
+        cv_text_on(56, y, &AF_S, b, st == HLS_PLAY ? HC_GREEN : st == HLS_ARMED ? HC_YELLOW : T_MID, T_BG);
+    }
+    cv_text_r(236, y, &AF_S, st == HLS_REC ? "REC: STOP" : "REC: BOUNCE", T_DIM, T_BG);
+    cv_rrect(4, y + 15, 232, 4, 1, T_LINE, T_BG);
+    if (total) {
+        uint32_t bars = (total + bar / 2u) / bar;
+        for (i = 1; i < bars && i < 32u; i++)
+            cv_rrect(4 + (int32_t)(i * 232u / bars), y + 14, 1, 6, 0, T_MID, T_BG);
+        cv_rrect(4, y + 15, 2 + (int32_t)((uint64_t)pos * 230u / total), 4, 1,
+                 st == HLS_REC ? HC_RED : hcl.playing ? HC_GREEN : T_MID, T_LINE);
+    }
+}
+
 /* HOME's middle: the chord big, its degree and modifier; the keyboard; the sound and the effects */
 static void hui_draw_home(void)
 {
@@ -1142,7 +1186,9 @@ static void hui_draw_home(void)
     sig += deg * 101u + lock * 7u + invk * 131u;
     for (i = 0; i < HCL_LAYERS; i++)
         sig += (hcl.l[i].state + 1u) * (3001u << i);
-    sig += hcl.playing * 7u + (hcl.len ? hcl.pos * 24u / hcl.len : 0u) * 51u;
+    sig += hcl.playing * 7u + (hcl.len ? hcl.pos * 24u / hcl.len : 0u) * 51u + hcl.sel * 5u;
+    if (hcl.l[hcl.sel % HCL_LAYERS].state == HLS_REC)   /* a recording: its eighths (the drum screens' strip) */
+        sig += ((hc.clock - hcl.l[hcl.sel % HCL_LAYERS].start) / (beat_samples() / 2u + 1u)) * 29u;
     sig += hcg.running * 53u + hcg.done * 59u + hcg.idx * 61u + hcg.last * 67u + hcg.score * 71u + hcg.combo * 73u +
            hcg.phase * 79u + hcg.ans * 83u + hcg.result * 89u + hcg.streak * 97u + hcg.total * 101u + hcg.level * 103u +
            hcg.song * 107u + (hcg.running ? (hcg.pos / 2048u) * 109u : 0u);
