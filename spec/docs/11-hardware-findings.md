@@ -159,10 +159,13 @@ output must be checked for the app line, not only for errors.
 
 ## The strumplate (owner's request, 2026-10-09)
 
-The nine white keys outside C4..B4 (F3 G3 A3 B3, C5 D5 E5 F5 G5) no longer repeat the degrees an
-octave down and up in the chord modes; they are a strumplate after the Omnichord's: each plays one
-note of the chord last built, rising from its root at C4 (chords sound at C3), octave after octave
-(a triad over three octaves). A swipe strums the chord. The plate follows the chord as it changes
+The chord keys moved to the seven white keys at the left (F3..E4: the first is the tonic, sounding at
+C3 as the C4 key did), and the nine white keys to their right (F4..G5) are a strumplate after the
+Omnichord's, chords left and strum right: each plays one note of the chord last built, rising from
+its root at C4, octave after octave (a triad over three octaves). A swipe strums the chord. The
+owner's first cut had the chords in the middle (C4..B4, the HiChord's) with the plate split around
+them; "the chord keys should be on the left". The DRUM pads, the loop styles and the step entry
+count from the first key too. The plate follows the chord as it changes
 and keeps the last chord once the keys are up (the piano then shows it dim, the plate note white);
 before any chord it plays the tonic's. HOLD does not latch plate notes, DRONE does not keep them;
 OCT- / OCT+ move them with the chords. The other modes (SEQ, DRUM, the games, the mixer) keep the

@@ -52,30 +52,30 @@ int main(int argc, char **argv)
     hui_power_on();
     hframes(3);
     ppm(argv[1], "home_idle");
-    key_down(7);                                         /* C4: C */
+    key_down(0);                                         /* the first key: C */
     key_down(10);                                        /* D#4: up-right -> C7 */
     hframes(3);
     ppm(argv[1], "home_c7");
     key_up(10);
-    key_up(7);
-    key_down(16); key_down(3);                           /* A4 (Am) with LOCK's key: LOCK needs a direction; HOLD on A#3 */
+    key_up(0);
+    key_down(9); key_down(3);                           /* A4 (Am) with LOCK's key: LOCK needs a direction; HOLD on A#3 */
     key_up(3);
     key_down(5); key_up(5);                              /* HOLD */
     hframes(3);
     ppm(argv[1], "home_am_hold");
-    key_up(16);
+    key_up(9);
     key_down(5); key_up(5);                              /* HOLD off */
     hframes(3);
     hc.t[0].bass = HB_SLASH; hc_apply(&trk[0]);          /* BASS SLASH: C4 held (the bass), E4 pressed: Em/C */
-    key_down(7); hframes(2);
-    key_down(11); hframes(3);
+    key_down(0); hframes(2);
+    key_down(4); hframes(3);
     ppm(argv[1], "home_slash");
-    key_up(11); key_up(7); hframes(2);
+    key_up(4); key_up(0); hframes(2);
     hc.t[0].bass = HB_OFF; hc_apply(&trk[0]);
-    key_down(7); hframes(2);
+    key_down(0); hframes(2);
     key_down(1); key_up(1); hframes(3);                  /* INVERT tapped while C is held: C/E, 1ST INV */
     ppm(argv[1], "home_inverted");
-    key_up(7); hc.inv[7] = 0; hframes(2);
+    key_up(0); hc.inv[0] = 0; hframes(2);
     hc.t[0].rev = HRV_HALL; hc.t[0].dly = HDL_1_8; hc.t[0].cho = HCH_WARM; hc.t[0].glide = HGL_SHORT;
     hc_apply(&trk[0]);
     hui.force = 1;
@@ -119,16 +119,16 @@ int main(int argc, char **argv)
     hframes(80);
     hui_mode_set(&trk[0], HP_SEQ);                       /* the sequencer: four steps */
     hcs_clear(); hcs.len = 8;
-    key_down(7); key_up(7); key_down(16); key_up(16); key_down(12); key_down(10); key_up(12); key_up(10); key_down(14); key_up(14);
+    key_down(0); key_up(0); key_down(9); key_up(9); key_down(6); key_down(10); key_up(6); key_up(10); key_down(7); key_up(7);
     press(B_PLAY);
     hframes(3);
     ppm(argv[1], "mode_sequencer");
     press(B_PLAY);
     hui_mode_set(&trk[0], HP_DRUM);
-    key_down(7);
+    key_down(0);
     hframes(3);
     ppm(argv[1], "mode_drum");
-    key_up(7);
+    key_up(0);
     hui_mode_set(&trk[0], HP_DRUMLOOP);
     hc.t[0].dl_style = DL_FUNK; hc.t[0].dl_var = DV_BUSY;
     hframes(3);
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
     hcg.song = 3; hcg.diff = HGD_HARD;
     press(B_PLAY);
     for (i = 0; i < 2900; i++) { events_block(CTL); if (i % 22u == 0u) frame(); }
-    key_down(7); key_up(7);
+    key_down(0); key_up(0);
     hframes(3);
     ppm(argv[1], "mode_hiro");
     hui_mode_set(&trk[0], HP_EAR);

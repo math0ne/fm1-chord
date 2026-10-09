@@ -248,7 +248,7 @@ static int test_presets(void)
     hc_sound_load(t, 14);                                /* PIANO */
     hc.t[0].rev = HRV_PLATE;
     hc.t[0].mode = HM_BORROW;
-    hc.inv[7] = 2;
+    hc.inv[0] = 2;
     hc.lock[9].on = 1; hc.lock[9].q = HQ_DOM7; hc.lock[9].roff = 0;
     hui_key_set(7);                                      /* G */
     song.g[G_BPM] = 98;
@@ -261,7 +261,7 @@ static int test_presets(void)
     hc_sound_load(t, 1);                                 /* SAW: everything else changes */
     hc.t[0].rev = HRV_OFF;
     hc.t[0].mode = HM_DEFAULT;
-    hc.inv[7] = 0;
+    hc.inv[0] = 0;
     hc.lock[9].on = 0;
     hui_key_set(0);
     song.g[G_BPM] = 120;
@@ -269,7 +269,7 @@ static int test_presets(void)
     press(B_OCTUP);
     bad += check("OCT+ on P2: loaded: PIANO, PLATE, BORROW, the inversion and the lock, key G, 98 BPM",
                  msg_is2("PRESET P2") && hc.t[0].sound == 14u && t->eng_req == 4u && hc.t[0].rev == HRV_PLATE &&
-                 hc.t[0].mode == HM_BORROW && hc.inv[7] == 2u && hc.lock[9].on && hc.lock[9].q == HQ_DOM7 &&
+                 hc.t[0].mode == HM_BORROW && hc.inv[0] == 2u && hc.lock[9].on && hc.lock[9].q == HQ_DOM7 &&
                  t->p[P_ROOT] == 7 && song.g[G_BPM] == 98 && t->p[P_CHRD] == CH_HI);
     bad += check("  .. and the Felucca parameters follow (the PLATE send)", t->p[P_REV] == 60);
     turn(EN_SELECT, 1); press(B_OCTUP);
@@ -301,11 +301,11 @@ static int test_draw_and_handover(void)
     }
     bad += check("every screen draws", ok);
     hui.screen = HU_HOME;
-    key_down(7); key_down(10);
+    key_down(0); key_down(10);
     hframes(2);
     bad += check("HOME with a chord: the chord's name on screen (the big face has every glyph of it)",
                  str_eq(chord_last[0].name, "C7") && text_w(&AF_X, "C7") > 0);
-    key_up(10); key_up(7);
+    key_up(10); key_up(0);
     hold(B_HOME);
     bad += check("HOME held: Felucca's UI", !hui.on && ui.home);
     hframes(2);
@@ -359,13 +359,13 @@ static int test_looper(void)
     bad += check("REC: layer 1 ARMED", hcl.l[0].state == HLS_ARMED && msg_is2("ARMED"));
     press(B_REC);
     bad += check("REC again: recording (free length), the transport runs", hcl.l[0].state == HLS_REC && hcl.playing);
-    key_down(7);                                       /* C for a beat */
+    key_down(0);                                       /* C for a beat */
     run_ms2(500);
-    key_up(7);
+    key_up(0);
     run_ms2(500);
-    key_down(9);                                       /* Dm for a beat */
+    key_down(2);                                       /* Dm for a beat */
     run_ms2(500);
-    key_up(9);
+    key_up(2);
     run_ms2(480);                                      /* ~2 s: 4 beats */
     press(B_REC);
     bad += check("REC: the layer plays, the loop is 4 beats (rounded), the live instrument moved to layer 2",
@@ -386,7 +386,7 @@ static int test_looper(void)
     bad += check("layer 2: ARMED waits for the loop's start", hcl.l[1].state == HLS_ARMED);
     run_ms2(2100);
     bad += check("  .. and records from it", hcl.l[1].state == HLS_REC || hcl.l[1].state == HLS_PLAY);
-    key_down(14); run_ms2(300); key_up(14);            /* a G on layer 2 */
+    key_down(7); run_ms2(300); key_up(7);            /* a G on layer 2 */
     run_ms2(2000);
     bad += check("  .. one loop later it plays, with the G; the live instrument is layer 3", hcl.l[1].state == HLS_PLAY &&
                  hcl.l[1].n >= 6u && song.sel == 2u);
@@ -434,9 +434,9 @@ static int test_seq_drums_mixer(void)
     hui_mode_set(t, HP_SEQ);
     hcs_clear();
     hcs.len = 4;
-    key_down(7); key_up(7);                            /* I */
-    key_down(16); key_up(16);                          /* vi */
-    key_down(10); key_down(12); key_up(12); key_up(10);   /* up-right held, then IV: F7 */
+    key_down(0); key_up(0);                            /* I */
+    key_down(9); key_up(9);                          /* vi */
+    key_down(10); key_down(6); key_up(6); key_up(10);   /* up-right held, then IV: F7 */
     key_down(1); key_up(1);                            /* F#3: a rest */
     bad += check("SEQUENCER: four keys wrote four steps (I, vi, IV + up-right, a rest), the cursor round", hcs.st[0].deg == 0u &&
                  hcs.st[1].deg == 5u && hcs.st[2].deg == 3u && hcs.st[2].dir == HD_UR && hcs.st[3].deg == 255u && hcs.cur == 0u);
@@ -475,20 +475,20 @@ static int test_seq_drums_mixer(void)
     /* the drums */
     hui_mode_set(t, HP_DRUM);
     bad += check("DRUM: the track is on the DRUM engine, the sound remembered", t->eng_req == ENGI_DRUM && hc.t[0].sound_saved == 1u);
-    key_down(7);
+    key_down(0);
     bad += check("  the C4 key: the kick (GM 36) sounds", gate_on(0, 36) || trk[0].v[0].active);
-    key_up(7);
-    key_down(11);
+    key_up(0);
+    key_down(4);
     bad += check("  the E4 key: the snare (38)", gate_on(0, 38) || trk[0].v[1].active || trk[0].v[0].active);
-    key_up(11);
+    key_up(4);
     run_ms2(100);
     key_down(8);                                       /* up: AUTO-DRUM 1/4 */
     mo_w = mo_r = 0;                                   /* (the MIDI OUT queue: nobody drains it here) */
-    key_down(7);
+    key_down(0);
     hits = midi_ons();
     run_ms2(1100);                                     /* ~2 beats */
     bad += check("AUTO-DRUM: the kick held with a direction repeats (2 more hits in 2 beats)", midi_ons() >= hits + 2u);
-    key_up(7); key_up(8);
+    key_up(0); key_up(8);
     press(B_EDIT);
     hui.sel[HU_MODE] = RM_KIT; press(B_OCTUP);
     bad += check("DRUM KIT: HAND -> the engine's KIT", hc.t[0].kit == 1u && t->p[P_E0] == 1);
@@ -498,7 +498,7 @@ static int test_seq_drums_mixer(void)
     /* the drum loops */
     hui_mode_set(t, HP_DRUMLOOP);
     bad += check("DRUM LOOP: the DRUM engine, the loop runs", t->eng_req == ENGI_DRUM && hcs.dl_running);
-    key_down(16); key_up(16);                          /* the A4 key (the sixth): DEMBOW */
+    key_down(9); key_up(9);                          /* the A4 key (the sixth): DEMBOW */
     bad += check("  a white key picks the style (A4: DEMBOW) and starts it", hc.t[0].dl_style == DL_DEMBOW && hcs.dl_running);
     mo_w = mo_r = 0;
     hits = midi_ons();
@@ -510,9 +510,9 @@ static int test_seq_drums_mixer(void)
     bad += check("PLAY: the loop stops", !hcs.dl_running);
     hui_mode_set(t, HP_MIXER);
     bad += check("MIXER: the sound back on the track", t->eng_req == ENGI_HC);
-    key_down(9); key_up(9);                            /* the D4 key: layer 2 mute */
-    bad += check("  key 2: layer 2 muted; again: unmuted", trk[1].p[P_MUTE] == 1 && (key_down(9), key_up(9), trk[1].p[P_MUTE] == 0));
-    key_down(18); key_up(18);                          /* B4: the metronome */
+    key_down(2); key_up(2);                            /* the D4 key: layer 2 mute */
+    bad += check("  key 2: layer 2 muted; again: unmuted", trk[1].p[P_MUTE] == 1 && (key_down(2), key_up(2), trk[1].p[P_MUTE] == 0));
+    key_down(11); key_up(11);                          /* B4: the metronome */
     bad += check("  key 7: the metronome off", !hcl.metro);
     press(B_OCTDN);
     bad += check("  OCT- on HOME: the selected layer's level down", t->p[P_LEVEL] == TP[P_LEVEL].def - 8);
@@ -543,18 +543,18 @@ static int test_games(void)
     press(B_PLAY);
     bad += check("CHORD HIRO: PLAY starts the song with a bar's count-in", hcg.running && hcg.idx == 0u && hcg.next_at == 4u * q);
     run_ms2(1900);                                     /* 100 ms before the first chord */
-    key_down(7); key_up(7);                            /* I, 100 ms early: inside the 150 ms window */
+    key_down(0); key_up(0);                            /* I, 100 ms early: inside the 150 ms window */
     bad += check("  the I key 100 ms early: OK (inside the window), the chord sounds, the score counts", hcg.hit && hcg.last == HGR_OK &&
                  hcg.score > 0u && gated_on(0) == 3u);
     run_ms2(2100);                                     /* into the second chord (V) */
     bad += check("  the song moved on to the V", hcg.idx == 1u && !hcg.hit);
-    key_down(14); key_up(14);                          /* V on time (+/- a block or so) */
+    key_down(7); key_up(7);                          /* V on time (+/- a block or so) */
     bad += check("  the V on time: PERFECT, combo 2", hcg.last == HGR_PERFECT && hcg.combo == 2u);
     run_ms2(2000);
     run_ms2(400);                                      /* the vi's window passes */
     bad += check("  nothing pressed for the vi: MISS, the combo gone", hcg.last == HGR_MISS && hcg.combo == 0u && hcg.miss == 1u);
     run_ms2(1800);
-    key_down(9); key_up(9);                            /* ii instead of IV */
+    key_down(2); key_up(2);                            /* ii instead of IV */
     bad += check("  the wrong chord: MISS", hcg.last == HGR_MISS && hcg.miss == 2u);
     for (i = 0; i < 5u; i++) run_ms2(2000);
     bad += check("  the song ends by itself (done)", hcg.done && !hcg.running);
@@ -574,13 +574,13 @@ static int test_games(void)
     bad += check("EAR TRAINER: PLAY asks a question (it plays)", hcg.phase == 1u);
     run_ms2(1200);
     bad += check("  .. then waits for the answer", hcg.phase == 2u && gated_on(0) == 0u);
-    key_down(7 + (hcg.q[0] == 0u ? 9u : 0u)); key_up(7 + (hcg.q[0] == 0u ? 9u : 0u));   /* a wrong degree (D if it was C, else C) */
+    key_down(hcg.q[0] == 0u ? 9u : 0u); key_up(hcg.q[0] == 0u ? 9u : 0u);   /* a wrong degree (D if it was C, else C) */
     bad += check("  a wrong key: NO, the streak 0, it was shown", hcg.phase == 3u && hcg.result == 2u && hcg.streak == 0u);
     run_ms2(1500);
     run_ms2(1200);
     bad += check("  the next question came and waits", hcg.phase == 2u);
     {
-        static const uint8_t DEG_KEY[7] = {7, 9, 11, 12, 14, 16, 18};
+        static const uint8_t DEG_KEY[7] = {0, 2, 4, 6, 7, 9, 11};
         key_down(DEG_KEY[hcg.q[0]]); key_up(DEG_KEY[hcg.q[0]]);
     }
     bad += check("  the right key: CORRECT, streak 1", hcg.result == 1u && hcg.streak == 1u && hcg.right == 1u);
@@ -595,7 +595,7 @@ static int test_games(void)
     run_ms2(1200);
     n0 = hcg.qdir[0];
     {
-        static const uint8_t DEG_KEY[7] = {7, 9, 11, 12, 14, 16, 18};
+        static const uint8_t DEG_KEY[7] = {0, 2, 4, 6, 7, 9, 11};
         static const uint8_t DIR_KEY[8] = {8, 10, 13, 15, 17, 20, 22, 25};
         key_down(DEG_KEY[hcg.q[0]]); key_up(DEG_KEY[hcg.q[0]]);
         bad += check("level 3: the degree alone is not enough (the direction counts)", hcg.result == 2u);
@@ -666,11 +666,11 @@ static int test_drums_under_chords(void)
     hui_mode_set(TSEL, HP_PLAY);
     run_ms2(50);                                       /* (the mode change's release of the track lands in a block) */
     bad += check("  PLAY mode on the new layer: the chord sound is back (not DRUM)", TSEL->eng_req != ENGI_DRUM && hc.t[1].play == HP_PLAY);
-    key_down(7);
+    key_down(0);
     run_ms2(1200);
     for (i = 0; i < NVOICE; i++) { drums += trk[0].v[i].active; chords += trk[1].v[i].active && trk[1].v[i].gate; }
     bad += check("  a chord held over the loop: chord voices on layer 2, drum voices still on layer 1", chords >= 3u && drums >= 1u);
-    key_up(7);
+    key_up(0);
     hcl_clear_all();
     hui_mode_set(&trk[0], HP_PLAY);
     return bad;
@@ -686,23 +686,23 @@ static int test_slash_first_thing(void)
     hui_power_on();
     run_ms2(100);                                      /* (the sound load at the first frame: an engine switch over blocks) */
     bad += check("power-on: BASS SLASH, the chord layer on the track", hc.t[0].bass == HB_SLASH && hc_on(t) && t->p[P_CHRD] == CH_HI);
-    key_down(7);                                       /* C held: C major with its root bass */
+    key_down(0);                                       /* C held: C major with its root bass */
     run_ms2(60);
     for (i = 0; i < NVOICE; i++) g += t->v[i].active && t->v[i].gate;
     printf("    [first chord] name %s gated %u notes:", hc.name, g);
     for (i = 0; i < NVOICE; i++) if (t->v[i].active) printf(" %d%s", t->v[i].note, t->v[i].gate ? "" : "(rel)");
     printf("  bass %d voices %d stereo %d pair %d play %d\n", hc.t[0].bass, hc.t[0].voices, hc.t[0].stereo, trk_pair[0], hc.t[0].play);
     bad += check("  the first chord: C with its bass (C1 C E G, voices 8 with partners)", str_eq(hc.name, "C") && gate_on(0, 24) && gate_on(0, 48) && g >= 4u);
-    key_up(7); run_ms2(60); key_down(7); run_ms2(60);
+    key_up(0); run_ms2(60); key_down(0); run_ms2(60);
     for (g = 0, i = 0; i < NVOICE; i++) g += t->v[i].active && t->v[i].gate;
     printf("    [second time] name %s gated %u notes:", hc.name, g);
     for (i = 0; i < NVOICE; i++) if (t->v[i].active) printf(" %d%s", t->v[i].note, t->v[i].gate ? "" : "(rel)");
     printf("\n");
-    key_down(11);                                      /* E pressed on top: Em/C */
+    key_down(4);                                      /* E pressed on top: Em/C */
     run_ms2(60);
     bad += check("  the second key on top: Em/C, C1 under E G B, the C chord gone", str_eq(hc.name, "Em/C") && gate_on(0, 24) &&
                  gate_on(0, 52) && gate_on(0, 59) && !gate_on(0, 48));
-    key_up(11); key_up(7);
+    key_up(4); key_up(0);
     run_ms2(60);
     return bad;
 }
@@ -713,7 +713,7 @@ static int test_live_persist(void)
     track_t *t = &trk[0];
     hui_power_on();
     memset(hc_live, 0, sizeof hc_live);
-    hc.t[0].bass = HB_ROOT; hc.t[0].rev = HRV_HALL; hc.inv[7] = 2; hc.lock[9].on = 1; hc_apply(t);
+    hc.t[0].bass = HB_ROOT; hc.t[0].rev = HRV_HALL; hc.inv[0] = 2; hc.lock[9].on = 1; hc_apply(t);
     fm1_ms += 600; hui_live_poll();
     bad += check("live state: a change is noticed within 500 ms and packed", hui_live.dirty && hc_live[0]);
     fm1_ms += 2000; hui_live_poll();
@@ -721,11 +721,11 @@ static int test_live_persist(void)
     fm1_ms += 1500; hui_live_poll();
     bad += check("  saved 3 s after the last change", !hui_live.dirty);
     hc_init();                                         /* power off, on */
-    bad += check("  a fresh boot starts from the defaults (BASS SLASH)", hc.t[0].bass == HB_SLASH && hc.inv[7] == 0);
+    bad += check("  a fresh boot starts from the defaults (BASS SLASH)", hc.t[0].bass == HB_SLASH && hc.inv[0] == 0);
     hui_live_restore();
     bad += check("  restored: BASS ROOT, the reverb, the inversion and the lock", hc.t[0].bass == HB_ROOT &&
-                 hc.t[0].rev == HRV_HALL && hc.inv[7] == 2 && hc.lock[9].on);
-    hc.t[0].bass = HB_SLASH; hc.t[0].rev = 0; hc.inv[7] = 0; hc.lock[9].on = 0; hc_apply(t);
+                 hc.t[0].rev == HRV_HALL && hc.inv[0] == 2 && hc.lock[9].on);
+    hc.t[0].bass = HB_SLASH; hc.t[0].rev = 0; hc.inv[0] = 0; hc.lock[9].on = 0; hc_apply(t);
     memset(hc_live, 0, sizeof hc_live);
     return bad;
 }

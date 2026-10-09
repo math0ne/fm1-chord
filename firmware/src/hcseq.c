@@ -180,7 +180,7 @@ static void hcs_rest_write(void)
 }
 
 /* DRUM: pad key k down / up; AUTO-DRUM when a direction is held */
-static uint32_t hcd_pad_note(uint32_t k) { return HC_PAD_NOTE[(key_place(k) + 3u) % 7u]; }
+static uint32_t hcd_pad_note(uint32_t k) { return HC_PAD_NOTE[key_place(k) % 7u]; }
 static void hcd_key(track_t *t, uint32_t k, int down)
 {
     if (down) {
@@ -255,7 +255,7 @@ static void hcs_mode_left(track_t *t)                  /* a mode change: what ra
 /* MIXER: the white keys 1..4 mute / unmute the looper's layers, key 7 the metronome */
 static void hcm_key(uint32_t k)
 {
-    uint32_t p = (key_place(k) + 3u) % 7u;
+    uint32_t p = key_place(k) % 7u;
     if (p < HCL_LAYERS)
         trk[p].p[P_MUTE] = (int16_t)!trk[p].p[P_MUTE];
     else if (p == 6u)

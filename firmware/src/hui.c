@@ -1056,7 +1056,7 @@ static void hui_draw_mode_body(void)
             int32_t x = 4 + (int32_t)(i % 4u) * 59, y = 10 + (int32_t)(i / 4u) * 52;
             uint32_t on = 0, k;
             for (k = 0; k < 27u; k++)
-                if (!key_black(k) && (key_place(k) + 3u) % 7u == i && ((held >> k) & 1u))
+                if (!key_black(k) && key_place(k) % 7u == i && ((held >> k) & 1u))
                     on = 1;
             cv_rrect(x, y, 56, 46, 6, on ? HC_DEG_COL[i] : T_SURF, T_BG);
             cv_text_c(x + 28, y + 15, &AF_S, HC_PAD_NAME[i], on ? HC_INK : T_TEXT, on ? HC_DEG_COL[i] : T_SURF);
@@ -1408,7 +1408,7 @@ static void hui_draw_home(void)
                 uint32_t d = hc_degree_of_key(TSEL, i, &o) % 7u;
                 char dn[2] = {(char)('1' + d), 0};
                 if (j >= 0) {                            /* a strumplate key: a bar as high as its note */
-                    int32_t h = 8 + j * 4;
+                    int32_t h = 4 + j * 2;
                     cv_rrect(x, 2, ww, 66, 2, on ? HC_INK : T_SURF, T_BG);
                     cv_rrect(x + 4, 65 - h, ww - 8, h, 1, on ? T_BG : T_MID, on ? HC_INK : T_SURF);
                     continue;

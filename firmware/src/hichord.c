@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
 /* The HiChord key layer (CHRD HI, chord.c): the white keys are scale degrees of the track's ROOT / SCALE
- * (DEGREE layout: C4 is the tonic and C4..B4 its seven degrees; PIANO layout: the key's own letter is
- * the root, snapped onto the scale). In the chord modes the white keys outside C4..B4 are the strumplate
- * (hc_plate_on: one note of the chord last played each, rising); in the other modes they are the degrees
- * an octave down (F3..B3) and up (C5..G5). The black keys are the eight
+ * (DEGREE layout: the seven white keys at the left, F3..E4, are the degrees, the first the tonic; PIANO
+ * layout: the key's own letter is the root, snapped onto the scale). In the chord modes the nine white
+ * keys to their right, F4..G5, are the strumplate (hc_plate_on: one note of the chord last played each,
+ * rising), as the Omnichord has its chord buttons left and its strumplate right; in the other modes they
+ * are the degrees again, an octave up. The black keys are the eight
  * modifier directions and three gestures:
  *   C#4 up, D#4 up-right, F#4 right, G#4 down-right, A#4 down, C#5 down-left, D#5 left, F#5 up-left
  *   F#3 INVERT (with chord keys held: their inversion cycles), G#3 LOCK (with a chord key and a
@@ -290,12 +291,13 @@ static uint32_t hc_mask(const track_t *t)
 static uint32_t hc_degree_of_key(const track_t *t, uint32_t k, int32_t *oct)
 {
     uint32_t p = key_place(k);                           /* white 0..15 from F3 */
-    *oct = (int32_t)((p + 3u) / 7u) - 1;
     if (hc_of(t)->layout == HL_PIANO) {                  /* the key's letter: its degree in the scale */
         static const uint8_t WPC[7] = {5, 7, 9, 11, 0, 2, 4};   /* F G A B C D E */
+        *oct = (int32_t)((p + 3u) / 7u) - 1;             /* (the letter's octave: C4 is 0) */
         return hs_degree_of(hc_mask(t), (uint32_t)t->p[P_ROOT], WPC[p % 7u]);
     }
-    return (p + 3u) % 7u;
+    *oct = (int32_t)(p / 7u);                            /* the tonic on the first key; the next seven an octave up */
+    return p % 7u;
 }
 
 /* the root note of key k's chord as it is now (kb_note: step entry, LEDs; chord_make builds the rest) */
@@ -432,23 +434,23 @@ static void hc_chord_of_key(track_t *t, uint32_t k, uint8_t *nn, uint32_t *np)
 }
 
 /* -------------------------------------------------- the strumplate (fm1-chord) --- */
-/* After the Omnichord: the nine white keys outside C4..B4 (F3 G3 A3 B3, C5 D5 E5 F5 G5) each play one note
- * of the chord last built, rising from its root in the octave above the chord keys (a triad spans three
- * octaves, a seventh chord two and a bit); dragged across, they strum it. In the chord modes only (PLAY
+/* After the Omnichord: the nine white keys right of the chord keys (F4 G4 A4 B4 C5 D5 E5 F5 G5) each play
+ * one note of the chord last built, rising from its root in the octave above the chord keys (a triad spans
+ * three octaves, a seventh chord two and a bit); dragged across, they strum it. In the chord modes only (PLAY
  * STRUM LEAD DRONE ARP REPEAT); the other modes keep the keys as their own. Before any chord has played,
  * the tonic's. OCT- / OCT+ move it with the chords. A plate note is the key's own (kb_chord), outside
  * hc.order: HOLD, the directions and SLASH leave it alone. */
 #define HC_PLATE_BASE 60                                 /* the first plate key: the root at C4 (chords: C3) */
 static uint8_t hc_plate[27];                             /* per key: the plate note it holds, 0 none */
 
-/* 0..8: the key's place on the plate; -1: not a plate key (black, inside C4..B4, or not a chord mode) */
+/* 0..8: the key's place on the plate; -1: not a plate key (black, a chord key, or not a chord mode) */
 static int32_t hc_plate_of_key(const track_t *t, uint32_t k)
 {
     uint32_t p;
     if (key_black(k) || hc_of(t)->play > HP_REPEAT)
         return -1;
     p = key_place(k);
-    return p < 4u ? (int32_t)p : p >= 11u ? (int32_t)(p - 7u) : -1;
+    return p >= 7u ? (int32_t)(p - 7u) : -1;
 }
 
 /* the note of plate place j for the chord last built: its pitch classes from the root up, octave after octave */
@@ -479,10 +481,10 @@ static uint32_t hc_plate_note(uint32_t j)
 static void hc_plate_on(track_t *t, uint32_t k, uint32_t j)
 {
     uint32_t x;
-    if (!hc.cur.n) {                                     /* nothing played yet: the tonic chord (the C4 key's) */
+    if (!hc.cur.n) {                                     /* nothing played yet: the tonic chord (the first key's) */
         uint8_t nn[CHORD_MAX];
         uint32_t n;
-        hc_chord_of_key(t, 7u, nn, &n);
+        hc_chord_of_key(t, 0u, nn, &n);
     }
     if (kb_chn[k])
         key_off(k, t);
@@ -739,7 +741,7 @@ static void hc_key_on(uint32_t k, track_t *t)
         hcd_key(t, k, 1);
         break;
     case HP_DRUMLOOP:                                    /* the style, started */
-        hc_of(t)->dl_style = (uint8_t)((key_place(k) + 3u) % 7u);
+        hc_of(t)->dl_style = (uint8_t)(key_place(k) % 7u);
         hcd_loop_start();
         break;
     case HP_MIXER:
