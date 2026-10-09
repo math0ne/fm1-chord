@@ -58,6 +58,11 @@ int main(int argc, char **argv)
     ppm(argv[1], "home_c7");
     key_up(10);
     key_up(0);
+    hui_mode_set(&trk[0], HP_LEAD); hframes(2);          /* LEAD: ii plays D3 alone, named */
+    key_down(2); hframes(3);
+    ppm(argv[1], "home_lead");
+    key_up(2); hframes(2);
+    hui_mode_set(&trk[0], HP_PLAY); hframes(2);
     key_down(9); key_down(3);                           /* A4 (Am) with LOCK's key: LOCK needs a direction; HOLD on A#3 */
     key_up(3);
     key_down(5); key_up(5);                              /* HOLD */

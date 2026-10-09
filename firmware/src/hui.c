@@ -1260,9 +1260,13 @@ static void hui_draw_piano(uint32_t deg)
     uint32_t i, lo = 127, hi = 0, start, root = (uint32_t)(hc.cur.root + 1200) % 12u, held = fm1_in.notes | hc.latched;
     uint8_t on[128];                                     /* 1 a note of the chord, 2 a strumplate note */
     memset(on, 0, sizeof on);
-    for (i = 0; i < hc.cur.n; i++)
-        if (hc.cur.note[i] <= 127u)
-            on[hc.cur.note[i]] = 1;
+    if (hui_c()->play == HP_LEAD) {                      /* LEAD: the root alone sounds */
+        on[clamp(hc.cur_root, 0, 127)] = 1;
+    } else {
+        for (i = 0; i < hc.cur.n; i++)
+            if (hc.cur.note[i] <= 127u)
+                on[hc.cur.note[i]] = 1;
+    }
     for (i = 0; i < 27u; i++)
         if (((held >> i) & 1u) && hc_plate[i])
             on[hc_plate[i]] = 2;
@@ -1309,9 +1313,20 @@ static void hui_draw_home(void)
     const hc_trk_t *c = hui_c();
     uint32_t k = song.sel, held = fm1_in.notes | hc.latched, i, fxm = hui_fx_mask(c);
     const char *name = chord_last[k].n && chord_last[k].name[0] ? chord_last[k].name : hc.name[0] ? hc.name : "";
-    uint32_t deg = 7, lock = 0, invk = 0;
-    uint32_t sig = str_hash(11u, name) + held * 31u + hc.dir * 7u + hc.cur_dir * 13u + fxm * 1013u + c->sound * 4099u +
-                   hc.hold * 65537u + chord_last[k].gen * 3u;
+    uint32_t deg = 7, lock = 0, invk = 0, sig;
+    char lead[8];
+    if (c->play == HP_LEAD) {                            /* LEAD: the one note that sounds (the chord's root), named */
+        if (hc.cur.n) {
+            uint32_t r = (uint32_t)clamp(hc.cur_root, 0, 127);
+            str_cpy(lead, HC_NOTE_NAME[r % 12u], sizeof lead);
+            fmt_int(lead + str_len(lead), (int32_t)(r / 12u) - 1);
+            name = lead;
+        } else {
+            name = "";
+        }
+    }
+    sig = str_hash(11u, name) + held * 31u + hc.dir * 7u + hc.cur_dir * 13u + fxm * 1013u + c->sound * 4099u +
+          hc.hold * 65537u + chord_last[k].gen * 3u;
     for (i = hc.nheld; i-- > 0;)                         /* the degree and lock of the chord key: pressed last
                                                           * (BASS SLASH: the key held first is only the bass) */
         if (!key_black(hc.order[i])) {

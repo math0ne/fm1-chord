@@ -172,6 +172,14 @@ OCT- / OCT+ move them with the chords. The other modes (SEQ, DRUM, the games, th
 keys as they were. The HOME legend marks the plate keys with a bar that rises with the note.
 hichord.c: hc_plate_of_key / hc_plate_note / hc_plate_on, tested in hichord_test plate().
 
+## LEAD shows its one note (owner's report, 2026-10-09)
+
+In LEAD the HOME screen kept naming the chord and drawing all its notes on the piano while only the
+root sounded. chord.c's one-voice branch did not build the chord at all (hc.cur, hc.name stale from
+the last chord mode), so the strumplate could not follow LEAD either. Now the chord is built as in
+the other modes and the root alone is played; HOME names the note that sounds (D3) and the piano
+shows it alone, the plate notes in white.
+
 ## ACOUSTIC GTR (owner's request)
 
 A plucky acoustic guitar for leads: a new PHYS preset on the string model (STRC 38, just above the

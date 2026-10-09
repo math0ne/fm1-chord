@@ -276,6 +276,13 @@ static int plate(void)
     bad += check("OCT+: the plate an octave up (F4 key: C5)", gate_note(t, 72) && ngated(t) == 1u);
     key_up(K_P0);
     song.octave = 0;
+    hc_play_set(t, HP_LEAD);                           /* LEAD: the root alone, the chord still built for the plate */
+    key_down(K_VI);
+    bad += check("LEAD: the vi key plays A3 alone, the chord (Am) built for the display and the plate",
+                 gate_note(t, 57) && ngated(t) == 1u && str_eq(hc.name, "Am") && hc.cur.n == 3u);
+    key_down(K_P1);
+    bad += check("  a plate key: C5 (Am's third, an octave up) takes the one voice", gate_note(t, 72) && ngated(t) == 1u);
+    key_up(K_P1); key_up(K_VI);
     hc_play_set(t, HP_SEQ);                            /* not a chord mode: the key is a degree an octave up */
     key_down(K_P0);
     bad += check("SEQ mode: F4 is the I chord an octave up again (C4 E4 G4)", gate_note(t, 60) && gate_note(t, 64) && gate_note(t, 67));

@@ -87,8 +87,12 @@ static uint32_t chord_make(const track_t *t, uint32_t root, uint8_t *out, int32_
         return 1;
     }
     if (mode == CH_HI) {                                /* the HiChord layer (hichord.c) */
-        if (trk_vmode(t) != V_POLY) {                   /* one voice: the degree's root (LEAD) */
-            int32_t rr = hc.cur_key < 27u ? (int32_t)root : scale_snap(t, (int32_t)root);
+        if (trk_vmode(t) != V_POLY) {                   /* one voice: the chord's root (LEAD). The chord is built
+                                                         * all the same: hc.cur and hc.name for the display and the
+                                                         * strumplate (fm1-chord) */
+            uint8_t nn[CHORD_MAX];
+            int32_t rr;
+            hc_make(t, root, nn, &rr, maskp);
             *rp = rr;
             *maskp = 1;
             out[0] = (uint8_t)clamp(rr, 0, 127);
