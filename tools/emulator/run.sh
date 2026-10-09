@@ -4,10 +4,12 @@
 #   tools/emulator/run.sh [firmware.fwsc]          (default: build/felucca.fwsc)
 #
 # The emulator is simonjohansson/fm1-emulator at its last released commit (81b9ed9, the Rust
-# core, GPL-3.0). Four small patches (fm1-emulator-81b9ed9.patch) add CPU forms and the fifth
-# USB endpoint that Felucca 1.0.1's toolchain output and USB audio input use. Needs cargo
+# core, GPL-3.0). fm1-emulator-81b9ed9.patch adds the CPU forms and the fifth USB endpoint that
+# Felucca 1.0.1's toolchain output and USB audio input use, the knobs (drag or scroll; MASTER is
+# the pot) and a Record WAV button for the emulated audio (spec/docs/10-emulator.md). Needs cargo
 # (https://rustup.rs) and, on Linux, the X11/Wayland dev packages from the emulator's README.
-# Under WSL the window opens on the Windows desktop through WSLg.
+# Under WSL the window opens on the Windows desktop through WSLg; on Windows build the same
+# patched source natively (cargo build --release --features gui --bin fm1-ui).
 set -e
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)

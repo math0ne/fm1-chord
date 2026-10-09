@@ -22,9 +22,29 @@ toolchain's own encoder emits for `*p += constant`. The emulator's test suite pa
 `tools/emulator/run.sh [firmware.fwsc]` clones the emulator at that commit, applies the patch,
 builds `fm1-ui` (needs cargo and the GUI packages from its README) and runs it. Under WSL the window
 appears on the Windows desktop through WSLg; `LIBGL_ALWAYS_SOFTWARE=1` is set because WSLg has no
-GPU driver for it. Verified: boot to the home screen, the USB console on the terminal, a held white
-key showing its chord and degree colour. The Rust core plays no audio and has no rotary input, so
-the encoders and the sound are hardware-only for now.
+GPU driver for it. On Windows the same patched source builds natively with rustup and the Visual
+Studio Build Tools (`cargo build --release --features gui --bin fm1-ui`). Verified: boot to the home
+screen, the USB console on the terminal, a held white key showing its chord and degree colour.
+
+## Knobs and audio (added to the patch set)
+
+The released core had no rotary input and no audio output. The patch adds:
+
+- **Knobs**: drag a knob up or down, or scroll over it. SELECT, ALGORITHM, PRESETS and KNOB1-4 are
+  the matrix encoders (`panel.c` PANEL_DEFAULT: SELECT 0, ALGORITHM 1, PRESETS 6, KNOB1-4 2..5).
+  Each click is a full quadrature cycle on the encoder's two matrix contacts, one state per 1.6
+  million guest instructions so the firmware's scan sees every state twice. MASTER sets the ADC
+  potentiometer (0..1023). Verified: four clicks on SELECT took the key from C major to E major.
+- **Record WAV** (toolbar): the emulated DAC stream to a 16-bit stereo 44.1 kHz file beside the
+  firmware. Felucca's output words are Q15 samples shifted left by OUT_SHIFT (7), so the recorder
+  shifts them back; MASTER sets the level as on hardware.
+
+Live playback is not offered on purpose: guest time comes from the instruction count, and the
+interpreter runs about 20-30 million instructions a second against the 240 MHz part (600 M
+instructions take 19 s in WSL, 28 s on Windows), so the firmware runs at a tenth of real time or
+less and live audio would be stretched or gapped. The recording plays at pitch afterwards. The
+author's QEMU core has host audio but is macOS-only so far.
 
 A headless sweep (`fm1-emu boot --press COLUMN:ROW --limit 300000000` for all 66 matrix positions)
-is the quick way to find further unsupported forms after firmware changes.
+is the quick way to find further unsupported forms after firmware changes; `boot` now also prints
+the emulated audio's word range on exit.

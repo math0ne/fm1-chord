@@ -28,7 +28,8 @@ Three menus on three buttons, colour-coded like the HiChord's: **SCL** key (grey
 | ![chord hiro](screenshots/mode_hiro.png) | ![ear trainer](screenshots/mode_ear.png) | ![drums](screenshots/mode_drum.png) |
 
 Status: complete and tested on the host simulator; not yet run on hardware. It runs in the
-[FM-1 emulator](https://github.com/simonjohansson/fm1-emulator) with four small patches to its
-released build: `tools/emulator/run.sh` fetches, patches, builds and launches it (WSL works).
+[FM-1 emulator](https://github.com/simonjohansson/fm1-emulator) with a patch set on its released
+build that also adds the knobs and WAV recording of the emulated audio: `tools/emulator/run.sh`
+fetches, patches, builds and launches it (WSL works; on Windows build the same source natively).
 Spec and notes in [spec/docs](spec/docs). Build and flash: [spec/docs/05-dev-setup.md](spec/docs/05-dev-setup.md).
 GPL-3.0, as Felucca.
