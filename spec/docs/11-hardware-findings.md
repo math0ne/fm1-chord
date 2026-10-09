@@ -54,6 +54,15 @@ not to work. Now the live state is packed like a preset into the settings record
 saved 3 s after the last change (one flash erase per edit session) and restored at boot
 (`hui_live_restore`, main.c). Key, scale, octave and tempo are Felucca's song and still reset.
 
+## Drum loops were clicks
+
+Report: DRUM LOOP mode gave only clicks. Reproduced on the host (`tests/drum_probe.c`: peaks near
+18000 with an RMS of 440 per quarter, a crest factor of 40). The loop sent each hit's note-off in the
+same instant as its note-on. A Felucca voice starts with its ADSR at zero and the drum's own hit only
+takes over in `drum_amp` during the first rendered block, so a release before that block ends the
+voice at once: a few samples. Pads were fine because a key is held. Now the loop's note-offs go out
+one block later (`hcd_loop_release`); the host render then shows the hits ringing (RMS 1500-4100).
+
 ## Owner's choices and small UI fixes
 
 - BASS defaults to SLASH (the HiChord: OFF): slash chords from the first power-on.

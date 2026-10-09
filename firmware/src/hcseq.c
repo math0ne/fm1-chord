@@ -79,6 +79,7 @@ static struct {
     /* the drum loop */
     uint8_t dl_running;
     uint8_t dl_step;
+    uint8_t dl_off;              /* lanes hit in the last step: their note-offs go out a block later */
     uint32_t dl_pos;
     uint8_t bounce;              /* leaving SEQUENCER while it ran: it plays on into the looper's first layer */
     /* AUTO-DRUM: the pads held, the rate of the direction held */
@@ -215,7 +216,20 @@ static void hcd_loop_step(track_t *t, uint32_t s)
             uint32_t v = hcd_vel(c->dl_style, c->dl_var, s, l);
             input_on(t, HC_LANE_NOTE[l], v);
             midi_out_event(0x09u | (0x90u | trk_midi_ch(trk_index(t))) << 8 | (uint32_t)HC_LANE_NOTE[l] << 16 | v << 24);
-            input_off(t, HC_LANE_NOTE[l]);               /* (a hit: the release does nothing to it) */
+            hcs.dl_off |= (uint8_t)(1u << l);            /* the note-off next block (hcd_loop_release): a voice
+                                                          * starts with its ADSR at 0, and a release before its
+                                                          * first block ends it at once, a click; one block in, the
+                                                          * drum's own hit holds it (drum_amp) */
+        }
+}
+/* the loop's hits of the last step: their note-offs, a block after the note-ons */
+static void hcd_loop_release(track_t *t)
+{
+    uint32_t l;
+    for (l = 0; l < 6u && hcs.dl_off; l++)
+        if ((hcs.dl_off >> l) & 1u) {
+            hcs.dl_off &= (uint8_t)~(1u << l);
+            input_off(t, HC_LANE_NOTE[l]);
             midi_out_event(0x08u | (0x80u | trk_midi_ch(trk_index(t))) << 8 | (uint32_t)HC_LANE_NOTE[l] << 16);
         }
 }
@@ -253,6 +267,8 @@ static void hcs_tick(uint32_t n)
 {
     track_t *t = TSEL;
     const hc_trk_t *c = hc_of(t);
+    if (hcs.dl_off)
+        hcd_loop_release(t);
     if (hcs.bounce && hcl.l[trk_index(t)].state != HLS_REC) {   /* the bounce recorded: the sequencer is done */
         hcs.bounce = 0;
         hcs_stop(t);
