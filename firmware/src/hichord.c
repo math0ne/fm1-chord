@@ -1,8 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
 /* The HiChord key layer (CHRD HI, chord.c): the white keys are scale degrees of the track's ROOT / SCALE
- * (DEGREE layout: C4 is the tonic, F3..B3 the degrees below it an octave down, C5..G5 an octave up;
- * PIANO layout: the key's own letter is the root, snapped onto the scale), the black keys the eight
+ * (DEGREE layout: C4 is the tonic and C4..B4 its seven degrees; PIANO layout: the key's own letter is
+ * the root, snapped onto the scale). In the chord modes the white keys outside C4..B4 are the strumplate
+ * (hc_plate_on: one note of the chord last played each, rising); in the other modes they are the degrees
+ * an octave down (F3..B3) and up (C5..G5). The black keys are the eight
  * modifier directions and three gestures:
  *   C#4 up, D#4 up-right, F#4 right, G#4 down-right, A#4 down, C#5 down-left, D#5 left, F#5 up-left
  *   F#3 INVERT (with chord keys held: their inversion cycles), G#3 LOCK (with a chord key and a
@@ -429,6 +431,71 @@ static void hc_chord_of_key(track_t *t, uint32_t k, uint8_t *nn, uint32_t *np)
     hc.cur_key = was;
 }
 
+/* -------------------------------------------------- the strumplate (fm1-chord) --- */
+/* After the Omnichord: the nine white keys outside C4..B4 (F3 G3 A3 B3, C5 D5 E5 F5 G5) each play one note
+ * of the chord last built, rising from its root in the octave above the chord keys (a triad spans three
+ * octaves, a seventh chord two and a bit); dragged across, they strum it. In the chord modes only (PLAY
+ * STRUM LEAD DRONE ARP REPEAT); the other modes keep the keys as their own. Before any chord has played,
+ * the tonic's. OCT- / OCT+ move it with the chords. A plate note is the key's own (kb_chord), outside
+ * hc.order: HOLD, the directions and SLASH leave it alone. */
+#define HC_PLATE_BASE 60                                 /* the first plate key: the root at C4 (chords: C3) */
+static uint8_t hc_plate[27];                             /* per key: the plate note it holds, 0 none */
+
+/* 0..8: the key's place on the plate; -1: not a plate key (black, inside C4..B4, or not a chord mode) */
+static int32_t hc_plate_of_key(const track_t *t, uint32_t k)
+{
+    uint32_t p;
+    if (key_black(k) || hc_of(t)->play > HP_REPEAT)
+        return -1;
+    p = key_place(k);
+    return p < 4u ? (int32_t)p : p >= 11u ? (int32_t)(p - 7u) : -1;
+}
+
+/* the note of plate place j for the chord last built: its pitch classes from the root up, octave after octave */
+static uint32_t hc_plate_note(uint32_t j)
+{
+    uint8_t pc[12];
+    uint32_t n = 0, i, m, root = (uint32_t)(hc.cur_root % 12 + 12) % 12u, x;
+    for (i = 0; i < hc.cur.n; i++) {
+        uint32_t c;
+        if (hc.cur.note[i] > 127u)
+            continue;
+        c = (hc.cur.note[i] + 12u - root) % 12u;
+        for (m = 0; m < n && pc[m] != c; m++)
+            ;
+        if (m < n)
+            continue;
+        for (m = n; m > 0 && pc[m - 1u] > c; m--)
+            pc[m] = pc[m - 1u];
+        pc[m] = (uint8_t)c;
+        n++;
+    }
+    if (!n)
+        return 0;
+    x = (uint32_t)(HC_PLATE_BASE + 12 * song.octave) + root + pc[j % n] + 12u * (j / n);
+    return x > 127u ? 127u : x;
+}
+
+static void hc_plate_on(track_t *t, uint32_t k, uint32_t j)
+{
+    uint32_t x;
+    if (!hc.cur.n) {                                     /* nothing played yet: the tonic chord (the C4 key's) */
+        uint8_t nn[CHORD_MAX];
+        uint32_t n;
+        hc_chord_of_key(t, 7u, nn, &n);
+    }
+    if (kb_chn[k])
+        key_off(k, t);
+    x = hc_plate_note(j);
+    hc_plate[k] = (uint8_t)x;
+    if (!x)
+        return;
+    if (!midi_local_held(t, x))                          /* (a chord key holds it already: it sounds) */
+        hc_note_on(t, x);
+    kb_chord[k][0] = (uint8_t)x;
+    kb_chn[k] = 1;
+}
+
 /* the arp plays the chord of key k (the last pressed) */
 static void hc_arp_take(track_t *t, uint32_t k)
 {
@@ -650,6 +717,13 @@ static void hc_key_on(uint32_t k, track_t *t)
     const hc_trk_t *c = hc_of(t);
     uint32_t ti = trk_index(t), i, n;
     uint8_t nn[CHORD_MAX];
+    {
+        int32_t j = hc_plate_of_key(t, k);
+        if (j >= 0) {                                    /* a strumplate key: one note of the chord */
+            hc_plate_on(t, k, (uint32_t)j);
+            return;
+        }
+    }
     hc_order_add(k);
     if ((hc.latched >> k) & 1u) {                        /* HOLD: it sounds already */
         hc.latched &= ~(1u << k);
@@ -767,6 +841,12 @@ static void hc_key_off(uint32_t k, track_t *t)
 {
     const hc_trk_t *c = hc_of(t);
     uint32_t ti = trk_index(t);
+    if (hc_plate[k] || hc_plate_of_key(t, k) >= 0) {     /* a strumplate key: its note ends (HOLD, DRONE: not kept) */
+        hc_plate[k] = 0;
+        if (kb_chn[k])
+            key_off(k, t);
+        return;
+    }
     if (c->play == HP_DRONE)
         return;                                          /* it rings until the next chord or another mode */
     if (c->play == HP_DRUM) {
@@ -828,6 +908,7 @@ static void hc_play_set(track_t *t, uint32_t play)
                 key_off(k, t);
             kb_chn[k] = 0;
             hc.strum[k].n = 0;
+            hc_plate[k] = 0;
             hc.latched &= ~(1u << k);
         }
     for (k = hc.nheld; k > 0; k--)                       /* the keys down stay down, they just sound no more */

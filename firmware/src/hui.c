@@ -1256,20 +1256,25 @@ static void hui_draw_piano(uint32_t deg)
 {
     static const uint8_t WHITE_OF[12] = {0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6};   /* the white key at or below */
     static const uint8_t IS_BLACK[12] = {0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0};
-    uint16_t col = deg < 7u ? HC_DEG_COL[deg] : HC_YELLOW;
-    uint32_t i, n = hc.cur.n, lo = 127, hi = 0, start, root = (uint32_t)(hc.cur.root + 1200) % 12u;
-    uint8_t on[128];
+    uint16_t col = deg < 7u ? HC_DEG_COL[deg] : HC_YELLOW, ccol;
+    uint32_t i, lo = 127, hi = 0, start, root = (uint32_t)(hc.cur.root + 1200) % 12u, held = fm1_in.notes | hc.latched;
+    uint8_t on[128];                                     /* 1 a note of the chord, 2 a strumplate note */
     memset(on, 0, sizeof on);
-    for (i = 0; i < n; i++) {
-        uint32_t x = hc.cur.note[i];
-        if (x > 127u)
-            continue;
-        on[x] = 1;
-        if (x < lo) lo = x;
-        if (x > hi) hi = x;
-    }
+    for (i = 0; i < hc.cur.n; i++)
+        if (hc.cur.note[i] <= 127u)
+            on[hc.cur.note[i]] = 1;
+    for (i = 0; i < 27u; i++)
+        if (((held >> i) & 1u) && hc_plate[i])
+            on[hc_plate[i]] = 2;
+    for (i = 0; i < 128u; i++)
+        if (on[i]) {
+            if (i < lo) lo = i;
+            if (i > hi) hi = i;
+        }
     if (lo > hi)
         return;
+    ccol = hc.nheld || hc.latched ? col : T_MID;         /* the chord in colour while a chord key sounds, else dim:
+                                                          * the plate strums the chord last played */
     start = lo - lo % 12u;
     if (hi >= start + 48u) {
         start = hi - 47u;
@@ -1280,24 +1285,22 @@ static void hui_draw_piano(uint32_t deg)
     for (i = start; i < start + 48u && i < 128u; i++)
         if (on[i] && !IS_BLACK[i % 12u]) {
             int32_t x = 8 + (int32_t)((i - start) / 12u * 7u + WHITE_OF[i % 12u]) * 8;
-            cv_rrect(x, 2, 7, 66, 1, col, T_BG);
-            if (i % 12u == root)
-                cv_rrect(x + 2, 60, 3, 3, 1, HC_INK, col);
+            uint16_t c = on[i] == 2u ? HC_INK : ccol;
+            cv_rrect(x, 2, 7, 66, 1, c, T_BG);
+            if (on[i] == 1u && i % 12u == root)
+                cv_rrect(x + 2, 60, 3, 3, 1, HC_INK, c);
         }
     for (i = start; i < start + 48u && i < 128u; i++)
         if (IS_BLACK[i % 12u]) {
             int32_t x = 8 + (int32_t)((i - start) / 12u * 7u + WHITE_OF[i % 12u]) * 8 + 5;
-            cv_rrect(x, 2, 5, 40, 1, on[i] ? col : T_RAISE, T_BG);
-            if (on[i] && i % 12u == root)
-                cv_rrect(x + 1, 32, 3, 3, 1, HC_INK, col);
+            uint16_t c = on[i] == 2u ? HC_INK : on[i] ? ccol : T_RAISE;
+            cv_rrect(x, 2, 5, 40, 1, c, T_BG);
+            if (on[i] == 1u && i % 12u == root)
+                cv_rrect(x + 1, 32, 3, 3, 1, HC_INK, c);
         }
-    for (i = 0; i < n; i++) {
-        uint32_t x = hc.cur.note[i];
-        if (x < start)
-            cv_rrect(2, 32, 4, 4, 2, col, T_BG);
-        else if (x >= start + 48u)
-            cv_rrect(234, 32, 4, 4, 2, col, T_BG);
-    }
+    for (i = 0; i < 128u; i++)                           /* a note beyond the window: a dot at that edge */
+        if (on[i] && (i < start || i >= start + 48u))
+            cv_rrect(i < start ? 2 : 234, 32, 4, 4, 2, on[i] == 2u ? HC_INK : ccol, T_BG);
 }
 
 /* HOME's middle: the chord big, its degree and modifier; the keyboard; the sound and the effects */
@@ -1401,10 +1404,15 @@ static void hui_draw_home(void)
         for (i = 0; i < 27u; i++) {
             uint32_t p = key_place(i), on = (held >> i) & 1u;
             if (!key_black(i)) {
-                int32_t o;
+                int32_t o, j = hc_plate_of_key(TSEL, i), x = x0 + (int32_t)p * (ww + 1);
                 uint32_t d = hc_degree_of_key(TSEL, i, &o) % 7u;
-                int32_t x = x0 + (int32_t)p * (ww + 1);
                 char dn[2] = {(char)('1' + d), 0};
+                if (j >= 0) {                            /* a strumplate key: a bar as high as its note */
+                    int32_t h = 8 + j * 4;
+                    cv_rrect(x, 2, ww, 66, 2, on ? HC_INK : T_SURF, T_BG);
+                    cv_rrect(x + 4, 65 - h, ww - 8, h, 1, on ? T_BG : T_MID, on ? HC_INK : T_SURF);
+                    continue;
+                }
                 cv_rrect(x, 2, ww, 66, 2, on ? HC_DEG_COL[d] : T_SURF, T_BG);
                 cv_rrect(x + 3, 62, ww - 6, 3, 1, HC_DEG_COL[d], on ? HC_DEG_COL[d] : T_SURF);   /* the degree's colour */
                 cv_text_c(x + ww / 2, 44, &AF_S, dn, on ? HC_INK : T_MID, on ? HC_DEG_COL[d] : T_SURF);   /* its number */

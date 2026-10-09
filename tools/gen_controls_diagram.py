@@ -72,9 +72,14 @@ def key_labels(d, ky):
     for i in range(16):
         x, deg = white_x(i), (i + 3) % 7
         cx = x + KW / 2
-        d.rounded_rectangle((cx - 9, ky + KH - 39, cx + 9, ky + KH - 21), 4, fill=KEY_W)
-        d.text((cx, ky + KH - 30), str(deg + 1), fill=(90, 90, 96), font=font(13, 600), anchor="mm")
-        d.rectangle((x + 6, ky + KH - 14, x + KW - 6, ky + KH - 8), fill=DEG[deg])
+        if 4 <= i <= 10:                                 # a chord key: its degree, in the degree's colour
+            d.rounded_rectangle((cx - 9, ky + KH - 39, cx + 9, ky + KH - 21), 4, fill=KEY_W)
+            d.text((cx, ky + KH - 30), str(deg + 1), fill=(90, 90, 96), font=font(13, 600), anchor="mm")
+            d.rectangle((x + 6, ky + KH - 14, x + KW - 6, ky + KH - 8), fill=DEG[deg])
+        else:                                            # a strumplate key: a bar as high as its note
+            j, h = (i if i < 4 else i - 7), 10 + (i if i < 4 else i - 7) * 5
+            d.rounded_rectangle((cx - 8, ky + KH - 12 - h - 2, cx + 8, ky + KH - 12 + 2), 3, fill=KEY_W)
+            d.rounded_rectangle((cx - 6, ky + KH - 12 - h, cx + 6, ky + KH - 12), 2, fill=(150, 150, 156))
     for p, a in enumerate(BLACK_AFTER):
         x = white_x(a) + KW - 11
         col = GREEN if p < 3 else YELLOW
@@ -209,8 +214,8 @@ def main(out):
     d.rounded_rectangle((16, ly, W - 16, H - 12), 12, fill=CARD)
     f15, f13 = font(15, 600), font(13, 450)
     d.text((34, ly + 12), "WHITE KEYS", fill=DIM, font=F_TITLE)
-    d.text((34, ly + 28), "Scale degrees, numbered on the keys: C4 is 1 (I), D4 2 (ii) … B4 7 (vii); F3–B3 an octave down, C5–G5 up",
-           fill=INK, font=f15)
+    d.text((34, ly + 28), "C4–B4 play chords: the scale degrees 1–7 (I, ii … vii).  F3–B3 and C5–G5: the strumplate, "
+                          "one note of the chord each, rising — swipe to strum", fill=INK, font=f15)
     d.text((34, ly + 50), "BLACK KEYS", fill=DIM, font=F_TITLE)
     d.text((34, ly + 66), "C#4 ↑  D#4 ↗  F#4 →  G#4 ↘  A#4 ↓  C#5 ↙  D#5 ←  F#5 ↖  the HiChord's joystick, held with a chord;  "
                           "F#3 INVERT  G#3 LOCK  A#3 HOLD", fill=INK, font=f15)

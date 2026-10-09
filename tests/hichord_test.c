@@ -104,6 +104,9 @@ static int name_is(uint32_t k, const char *want)
 #define K_A4 16u
 #define K_B4 18u
 #define K_C5 19u
+#define K_G3 2u
+#define K_B3 6u
+#define K_G5 26u
 #define K_INVERT 1u                                /* F#3 */
 #define K_LOCK 3u                                  /* G#3 */
 #define K_HOLD 5u                                  /* A#3 */
@@ -236,6 +239,45 @@ static int tables(void)
     hc.t[0].mode = HM_OG;
     hc.dir = HD_DR;    bad += check("OG: as DEFAULT (Cmaj9)", name_is(K_C4, "Cmaj9"));
     hc.dir = HD_NONE; hc.t[0].mode = HM_DEFAULT;
+    return bad;
+}
+
+/* the strumplate: the nine outer white keys play the chord last built, one note each, rising from its root at C4 */
+static int plate(void)
+{
+    int bad = 0;
+    track_t *t = &trk[0];
+    reset();
+    key_down(K_F3);
+    bad += check("strumplate before any chord: the tonic's (F3 key: C4), no chord key held", gate_note(t, 60) && ngated(t) == 1u && hc.nheld == 0u);
+    key_up(K_F3);
+    bad += check("  let go: it ends", ngated(t) == 0u);
+    hc.hold = 1;
+    key_down(K_G3); key_up(K_G3);
+    bad += check("  HOLD does not latch a plate note", ngated(t) == 0u);
+    hc.hold = 0;
+    key_down(K_A4); key_up(K_A4);                      /* Am */
+    key_down(K_F3); key_down(K_G3); key_down(K_B3); key_down(K_C5); key_down(K_G5);
+    bad += check("after Am: F3 A4, G3 C5, B3 A5, C5 C6, G5 E7 (A C E from the root, octave after octave)",
+                 gate_note(t, 69) && gate_note(t, 72) && gate_note(t, 81) && gate_note(t, 84) && gate_note(t, 100) && ngated(t) == 5u);
+    key_up(K_F3); key_up(K_G3); key_up(K_B3); key_up(K_C5); key_up(K_G5);
+    key_down(K_C4);                                    /* C held: the plate follows it */
+    key_down(K_C5);
+    bad += check("C held, the C5 key: E5 (its fifth plate note); the chord keeps sounding",
+                 gate_note(t, 76) && gate_note(t, 48) && gate_note(t, 52) && gate_note(t, 55) && ngated(t) == 4u);
+    key_up(K_C5);
+    bad += check("  the plate key up: its note ends, the chord stays", !gate_note(t, 76) && ngated(t) == 3u);
+    key_up(K_C4);
+    song.octave = 1;
+    key_down(K_F3);
+    bad += check("OCT+: the plate an octave up (F3 key: C5)", gate_note(t, 72) && ngated(t) == 1u);
+    key_up(K_F3);
+    song.octave = 0;
+    hc_play_set(t, HP_SEQ);                            /* not a chord mode: the key is a degree an octave down */
+    key_down(K_F3);
+    bad += check("SEQ mode: F3 is the IV chord an octave down again (F2 A2 C3)", gate_note(t, 41) && gate_note(t, 45) && gate_note(t, 48));
+    key_up(K_F3);
+    hc_play_set(t, HP_PLAY);
     return bad;
 }
 
@@ -626,7 +668,7 @@ static int stereo_master(void)
 
 int main(void)
 {
-    int bad = degrees() + tables() + keys() + gestures() + bass_voices_leading() + midi_in_steps() + play_modes() + stereo_master();
+    int bad = degrees() + tables() + keys() + plate() + gestures() + bass_voices_leading() + midi_in_steps() + play_modes() + stereo_master();
     printf("%s\n", bad ? "HICHORD TEST FAILED" : "hichord keys test passed");
     return bad != 0;
 }

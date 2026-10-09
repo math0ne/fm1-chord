@@ -157,6 +157,18 @@ the resonance coefficients needs a runtime helper the part lacks; the host has i
 the previous build and the knobs looked unchanged; fixed with 32-bit divisions. The build step's
 output must be checked for the app line, not only for errors.
 
+## The strumplate (owner's request, 2026-10-09)
+
+The nine white keys outside C4..B4 (F3 G3 A3 B3, C5 D5 E5 F5 G5) no longer repeat the degrees an
+octave down and up in the chord modes; they are a strumplate after the Omnichord's: each plays one
+note of the chord last built, rising from its root at C4 (chords sound at C3), octave after octave
+(a triad over three octaves). A swipe strums the chord. The plate follows the chord as it changes
+and keeps the last chord once the keys are up (the piano then shows it dim, the plate note white);
+before any chord it plays the tonic's. HOLD does not latch plate notes, DRONE does not keep them;
+OCT- / OCT+ move them with the chords. The other modes (SEQ, DRUM, the games, the mixer) keep the
+keys as they were. The HOME legend marks the plate keys with a bar that rises with the note.
+hichord.c: hc_plate_of_key / hc_plate_note / hc_plate_on, tested in hichord_test plate().
+
 ## ACOUSTIC GTR (owner's request)
 
 A plucky acoustic guitar for leads: a new PHYS preset on the string model (STRC 38, just above the
