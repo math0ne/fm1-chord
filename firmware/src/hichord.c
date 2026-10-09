@@ -517,11 +517,12 @@ static void hc_black(uint32_t k, int down)
             uint32_t key = hc.order[i];
             if (hc.lock[key].on) {
                 hc.lock[key].on = 0;
-            } else if (hc.dir != HD_NONE) {
+            } else if (hc.dir != HD_NONE || hc.inv[key]) {   /* a direction's chord, or the plain chord with its
+                                                          * inversion: the inversion sticks only to a locked key */
                 const track_t *t = &trk[kb_trk[key] % NTRK];
-                int32_t oct, r, roff;
+                int32_t oct, r, roff = 0;
                 uint32_t q = hs_degree_chord(hc_mask(t), hc_degree_of_key(t, key, &oct), &r);
-                hc.lock[key].q = (uint8_t)hq_modify(hc_of(t)->mode, hc.dir, q, &roff);
+                hc.lock[key].q = (uint8_t)(hc.dir != HD_NONE ? hq_modify(hc_of(t)->mode, hc.dir, q, &roff) : q);
                 hc.lock[key].roff = (int8_t)roff;
                 hc.lock[key].on = 1;
             }
@@ -776,6 +777,8 @@ static void hc_key_off(uint32_t k, track_t *t)
         return;
     }
     hc_order_remove(k);
+    if (!hc.lock[k].on)
+        hc.inv[k] = 0;                                   /* the inversion was for this press (LOCK keeps it) */
     if (hc.strum[k].n) {                                 /* the roll stops: only the notes that started end */
         hc.strum[k].n = 0;
     }
@@ -927,6 +930,8 @@ static void hc_block(void)
             if ((hc.latched >> k) & 1u) {
                 hc.latched &= ~(1u << k);
                 hc_order_remove(k);
+                if (!hc.lock[k].on)
+                    hc.inv[k] = 0;
                 key_off(k, &trk[kb_trk[k] % NTRK]);
             }
         for (k = 0; k < NTRK; k++)

@@ -111,6 +111,14 @@ in hichord.c, ORed into the scan in seq.c keyboard_block), so chord gestures can
 unit from a script and read back with `hc`. Checked after a reboot: `hc key 7 1` gives C with its
 bass (24 48 52 55 60 67), `hc key 11 1` on top gives "Em/C" with 24 52 55 59 64 71 and no 48.
 
+## Inversions stuck to the key
+
+Report: an inversion stayed on the key after letting go, LOCK or not. The HiChord's rule for a
+change sticking to a button is Chord Lock, so now a key's inversion is forgotten when the key is let
+go (or when HOLD releases it) unless the key is locked. LOCK without a joystick direction on an
+inverted key locks the plain chord with its inversion; LOCK again unlocks, and the inversion goes
+with the next release.
+
 ## Numbers
 
 | | |

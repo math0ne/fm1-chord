@@ -307,6 +307,21 @@ static int gestures(void)
     bad += check("  again: root position; the inversion is the key's own (D4 still root position)",
                  key_is(K_C4, N(48, 52, 55)) && key_is(K_D4, N(50, 53, 57)));
     key_up(K_C4);
+    key_down(K_C4); key_down(K_INVERT); key_up(K_INVERT);
+    bad += check("INVERT: the 1st inversion while the key is held", key_is(K_C4, N(52, 55, 60)));
+    key_up(K_C4);
+    bad += check("  let go: the inversion is forgotten (the key is not locked): root position next", hc.inv[K_C4] == 0 &&
+                 key_is(K_C4, N(48, 52, 55)));
+    key_up(K_C4);
+    key_down(K_C4); key_down(K_INVERT); key_up(K_INVERT); key_down(K_LOCK); key_up(K_LOCK);
+    bad += check("  LOCK without a direction on an inverted key: locked, the inversion sticks", hc.lock[K_C4].on && hc.inv[K_C4] == 1u);
+    key_up(K_C4);
+    bad += check("  next press: still the 1st inversion", hc.inv[K_C4] == 1u && key_is(K_C4, N(52, 55, 60)));
+    key_up(K_C4);
+    key_down(K_C4); key_down(K_LOCK); key_up(K_LOCK); key_up(K_C4);
+    bad += check("  LOCK again then let go: unlocked, root position next", !hc.lock[K_C4].on && hc.inv[K_C4] == 0 &&
+                 key_is(K_C4, N(48, 52, 55)));
+    key_up(K_C4);
     key_down(K_C4); key_down(K_UR); key_down(K_LOCK); key_up(K_LOCK); key_up(K_UR);
     bad += check("LOCK with a direction held: the key keeps C7 after the direction is let go", key_is(K_C4, N(48, 52, 55, 58)) &&
                  gate_note(t, 58) && hc.lock[K_C4].on);
