@@ -1224,6 +1224,57 @@ static void hui_loop_strip(int32_t y)
     }
 }
 
+/* the chord that sounds, on a piano of four octaves: its notes in the degree's colour, the root marked
+ * with a dot, a note beyond the window as a dot at that edge. The window starts at the C at or below the
+ * lowest note, moved up when the top note would not fit */
+static void hui_draw_piano(uint32_t deg)
+{
+    static const uint8_t WHITE_OF[12] = {0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6};   /* the white key at or below */
+    static const uint8_t IS_BLACK[12] = {0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0};
+    uint16_t col = deg < 7u ? HC_DEG_COL[deg] : HC_YELLOW;
+    uint32_t i, n = hc.cur.n, lo = 127, hi = 0, start, root = (uint32_t)(hc.cur.root + 1200) % 12u;
+    uint8_t on[128];
+    memset(on, 0, sizeof on);
+    for (i = 0; i < n; i++) {
+        uint32_t x = hc.cur.note[i];
+        if (x > 127u)
+            continue;
+        on[x] = 1;
+        if (x < lo) lo = x;
+        if (x > hi) hi = x;
+    }
+    if (lo > hi)
+        return;
+    start = lo - lo % 12u;
+    if (hi >= start + 48u) {
+        start = hi - 47u;
+        start += (12u - start % 12u) % 12u;
+    }
+    for (i = 0; i < 28u; i++)
+        cv_rrect(8 + (int32_t)i * 8, 2, 7, 40, 1, T_SURF, T_BG);
+    for (i = start; i < start + 48u && i < 128u; i++)
+        if (on[i] && !IS_BLACK[i % 12u]) {
+            int32_t x = 8 + (int32_t)((i - start) / 12u * 7u + WHITE_OF[i % 12u]) * 8;
+            cv_rrect(x, 2, 7, 40, 1, col, T_BG);
+            if (i % 12u == root)
+                cv_rrect(x + 2, 34, 3, 3, 1, HC_INK, col);
+        }
+    for (i = start; i < start + 48u && i < 128u; i++)
+        if (IS_BLACK[i % 12u]) {
+            int32_t x = 8 + (int32_t)((i - start) / 12u * 7u + WHITE_OF[i % 12u]) * 8 + 5;
+            cv_rrect(x, 2, 5, 24, 1, on[i] ? col : T_RAISE, T_BG);
+            if (on[i] && i % 12u == root)
+                cv_rrect(x + 1, 18, 3, 3, 1, HC_INK, col);
+        }
+    for (i = 0; i < n; i++) {
+        uint32_t x = hc.cur.note[i];
+        if (x < start)
+            cv_rrect(2, 20, 4, 4, 2, col, T_BG);
+        else if (x >= start + 48u)
+            cv_rrect(234, 20, 4, 4, 2, col, T_BG);
+    }
+}
+
 /* HOME's middle: the chord big, its degree and modifier; the keyboard; the sound and the effects */
 static void hui_draw_home(void)
 {
@@ -1249,7 +1300,9 @@ static void hui_draw_home(void)
                 deg = hc_degree_of_key(TSEL, i, &o) % 7u;
                 lock |= hc.lock[i].on;
             }
-    sig += deg * 101u + lock * 7u + invk * 131u;
+    sig += deg * 101u + lock * 7u + invk * 131u + hc.cur.n * 131u + (uint32_t)(hc.cur.root + 1200) * 3u;
+    for (i = 0; i < hc.cur.n && i < HS_N; i++)           /* the piano: the chord's notes */
+        sig += (uint32_t)hc.cur.note[i] * (7u + i * 3u);
     for (i = 0; i < HCL_LAYERS; i++)
         sig += (hcl.l[i].state + 1u) * (3001u << i);
     sig += hcl.playing * 7u + (hcl.len ? hcl.pos * 24u / hcl.len : 0u) * 51u + hcl.sel * 5u;
@@ -1316,7 +1369,9 @@ static void hui_draw_home(void)
     cv_blit(0, HU_HEAD);
     /* the keyboard: 16 white keys, 11 black, the held ones in their degree's colour, the directions dim */
     cv_begin(240, 66, T_BG);
-    {
+    if (held && hc.cur.n) {                              /* a chord sounds: its notes on a piano */
+        hui_draw_piano(deg);
+    } else {
         int32_t ww = 14, x0 = 4;
         for (i = 0; i < 27u; i++) {
             uint32_t p = key_place(i), on = (held >> i) & 1u;
@@ -1337,6 +1392,8 @@ static void hui_draw_home(void)
                 cv_rrect(x, 2, 9, 24, 2, col, T_BG);
             }
         }
+    }
+    {
         /* the sound and its effects */
         cv_text_on(4, 47, &AF_M, HC_SOUNDS[c->sound % HC_NSOUNDS].name, HC_YELLOW, T_BG);
         {

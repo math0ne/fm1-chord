@@ -119,6 +119,13 @@ go (or when HOLD releases it) unless the key is locked. LOCK without a joystick 
 inverted key locks the plain chord with its inversion; LOCK again unlocks, and the inversion goes
 with the next release.
 
+## The chord on a piano (owner's choice)
+
+While a chord sounds, HOME's bottom graphic shows the chord's notes on a four-octave piano (the
+window starts at the C at or below the lowest note, moved up when the top note would not fit; a note
+beyond it is a dot at that edge) in the degree's colour, the root notes dotted. At rest the FM-1 key
+layout with its degree colours is back. `hui_draw_piano`; the README's home shot shows C7.
+
 ## Numbers
 
 | | |

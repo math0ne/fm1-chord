@@ -4,35 +4,42 @@ A custom firmware that turns the M-VAVE FM-1 pocket synth into a HiChord-style c
 Built on [Felucca](https://github.com/hugelton/Felucca). Clean-room: nothing from the HiChord's firmware.
 
 **White keys play chords.** Each white key is a scale degree in the current key and scale, so every
-chord fits: C4 is I, D4 is ii, and so on, across two octaves.
+chord fits: C4 is I, D4 is ii, and so on, across two octaves. The screen names the chord and shows
+its notes on a piano.
 
 **Black keys change them.** The eight black keys of the middle octaves are the HiChord's joystick
-directions (7ths, 9ths, sus, dim, aug, borrowed chords, in four tables); F#3 inverts, G#3 locks the
-change to a key, A#3 holds.
+directions (7ths, 9ths, sus, dim, aug, borrowed chords, in four tables); F#3 cycles the inversion
+(C, C/E, C/G), G#3 locks a change to a key, A#3 holds. With BASS on SLASH (the default), the key held
+first is the bass and the next one the chord: Em/C.
 
 **Everything else the HiChord does:** Play, Strum, Lead, Drone, Arp, Repeat, a 16-step chord
 sequencer, drum pads, 56 drum loops, a 4-layer looper, a mixer, Chord Hiro and the Ear Trainer; 36 sounds,
 7 envelope presets, reverb, delay, chorus, flanger, tremolo, vibrato, glide, drive, tape, stereo, a filter
-wheel; key, scale, bass, voices, voice leading; four presets; MIDI in and out. Only the mic features are missing.
+wheel; key, scale, bass, voices, voice leading; four presets; MIDI in and out. Only the mic features and
+Bluetooth are missing.
 
-Three menus on three buttons, colour-coded like the HiChord's: **SCL** key (grey), **FX** sound
-(yellow), **EDIT** mode (red), **SAVE** presets. HOME held gives you Felucca's full synth underneath.
+**Controls.** Three menus on three buttons, colour-coded like the HiChord's: **SCL** key (grey),
+**FX** sound (yellow), **EDIT** mode (red), **SAVE** presets. The PRESETS and ALGORITHM knobs pick the
+sound and the mode from a list, ENV and LFO open theirs, KNOB 1 is the filter wheel, KNOB 2 and 3
+attack and release, KNOB 4 the tempo, or an effect's amount on its row in the sound menu. Chords over
+drums: record the drum loop into a looper layer; the drum screens show the loop to time it. Your
+settings come back after power-off. HOME held gives you Felucca's full synth underneath.
 
 ![controls](screenshots/controls.png)
 
 | | | |
 |---|---|---|
-| ![home](screenshots/home_c7.png) | ![effects](screenshots/home_fx.png) | ![key menu](screenshots/menu_key.png) |
-| ![sound menu](screenshots/menu_sound.png) | ![mode menu](screenshots/menu_mode.png) | ![looper](screenshots/menu_looper.png) |
-| ![sequencer](screenshots/mode_sequencer.png) | ![drum loops](screenshots/mode_drumloop.png) | ![mixer](screenshots/mode_mixer.png) |
-| ![chord hiro](screenshots/mode_hiro.png) | ![ear trainer](screenshots/mode_ear.png) | ![drums](screenshots/mode_drum.png) |
+| ![home](screenshots/home_c7.png) | ![slash chord](screenshots/home_slash.png) | ![inversion](screenshots/home_inverted.png) |
+| ![effects](screenshots/home_fx.png) | ![sound list](screenshots/pick_sound.png) | ![envelopes](screenshots/pick_env.png) |
+| ![key menu](screenshots/menu_key.png) | ![sound menu](screenshots/menu_sound_amount.png) | ![mode menu](screenshots/menu_mode.png) |
+| ![looper](screenshots/menu_looper.png) | ![sequencer](screenshots/mode_sequencer.png) | ![drum loop recording](screenshots/mode_drumloop_rec.png) |
+| ![drums](screenshots/mode_drum.png) | ![mixer](screenshots/mode_mixer.png) | ![chord hiro](screenshots/mode_hiro.png) |
 
-Status: complete, tested on the host simulator, and running on an FM-1 since v0.1 (installed over
-USB-MIDI with `tools/fm1_install.py`; 28 % CPU at idle on the console). It also runs in the
+Status: running on an FM-1 (installed over USB-MIDI with `tools/fm1_install.py`, 28 % CPU at idle)
+and tested on the host simulator. It also runs in the
 [FM-1 emulator](https://github.com/simonjohansson/fm1-emulator) with a patch set on its released
-build that also adds the knobs and WAV recording of the emulated audio: `tools/emulator/run.sh`
-fetches, patches, builds and launches it (WSL works; on Windows build the same source natively).
-Factory reset: hold HOME + SAVE while powering on (3 s countdown), or `factory yes` on the USB
-console; it erases the settings, presets and projects and keeps uploaded samples.
-Spec and notes in [spec/docs](spec/docs). Build and flash: [spec/docs/05-dev-setup.md](spec/docs/05-dev-setup.md).
+build that adds the knobs and WAV recording: `tools/emulator/run.sh` fetches, patches, builds and
+launches it. Factory reset: hold HOME + SAVE while powering on, or `factory yes` on the USB console.
+Spec and notes in [spec/docs](spec/docs); build, flash and the findings on the unit in
+[spec/docs/05-dev-setup.md](spec/docs/05-dev-setup.md) and [spec/docs/11-hardware-findings.md](spec/docs/11-hardware-findings.md).
 GPL-3.0, as Felucca.
