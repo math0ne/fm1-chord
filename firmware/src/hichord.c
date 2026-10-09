@@ -251,8 +251,12 @@ static void hc_apply(track_t *t)
         song.g[G_DFDBK] = 55;
     }
     /* the voice mode: LEAD is one voice with glide between held keys; the rest POLY. Felucca's own arp off */
-    if (ENGINES[eng_idx(t->eng_req)] == &ENG_DRUM)      /* a drum mode (hui.c switched the engine): the kit */
+    if (ENGINES[eng_idx(t->eng_req)] == &ENG_DRUM) {    /* a drum mode (hui.c switched the engine): the kit */
         t->p[P_E0] = (int16_t)(c->kit % 4u);
+        if (t->p[P_LEVEL] > 96)                          /* the hits are lone voices, mixed whole since the panning
+                                                          * fix: 5 dB down keeps the kit where it was against the chords */
+            t->p[P_LEVEL] = 96;
+    }
     t->p[P_VOICE] = (int16_t)(c->play == HP_LEAD ? V_LEGATO : V_POLY);
     t->p[P_AMODE] = 0;
     t->p[P_AHOLD] = 0;
@@ -261,6 +265,7 @@ static void hc_apply(track_t *t)
         t->p[P_M1SRC + 3u * i] = 0;
     /* STEREO partners (voice.c, fx.c): not in LEAD (one centred voice, as the HiChord's 3.0 LEAD) */
     trk_pair[trk_index(t)] = (uint8_t)(c->stereo && c->play != HP_LEAD);
+    trk_hc[trk_index(t)] = 1;
     if (t == TSEL) {                                     /* the master effects follow the live track (hcfx.c) */
         hcfx.filt = c->filt;
         hcfx.hp = c->hp;

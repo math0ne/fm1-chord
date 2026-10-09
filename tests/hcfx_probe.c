@@ -54,6 +54,7 @@ int main(int argc, char **argv)
     trk[0].p[P_ROOT] = 0;
     trk[0].p[P_CHRD] = CH_HI;
     hc.t[0].voices = HV_8;
+    if (argc > 3) hc.t[0].bass = HB_OFF;                            /* a third argument: no bass voice */
     song.master_q12 = argc > 2 ? (int32_t)atoi(argv[2]) : 4096;       /* MASTER: 4096 full, 256 quiet */
     if (w) wav_hdr(w, 6000u * (FS / 1000u));
     fm1_in.notes = 1u << K_C4;                                       /* C major held throughout */

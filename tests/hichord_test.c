@@ -607,13 +607,17 @@ static int stereo_master(void)
     key_up(K_C4);
     run_ms(400);
     bad += check("TAPE VINYL: sound", rl3 > 400u);
-    hc.t[0].tape = HTP_OFF; hc.t[0].hp = 1;
+    hc.t[0].tape = HTP_OFF; hc.t[0].hp = 0;
     hc_apply(t);
     key_down(K_C4);
+    run_ms(1200);                                      /* sustained: the reference, then the same chord hi-passed */
+    render_rms(40, &rl2, &rr2, &diff2);
+    hc.t[0].hp = 1;
+    hc_apply(t);
     render_rms(40, &rl3, &rr3, &diff3);
     key_up(K_C4);
     run_ms(400);
-    bad += check("HI-PASS: sound (less bass)", rl3 > 300u && rl3 < rl2);
+    bad += check("HI-PASS: sound (less bass)", rl3 > 150u && rl3 < rl2);
     hc.t[0].hp = 0;
     hc_apply(t);
     bad += check("everything off: the master stage bypassed", !hcfx.filt && !hcfx.hp && !hcfx.flg && !hcfx.tape);

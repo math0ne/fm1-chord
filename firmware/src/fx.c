@@ -342,6 +342,15 @@ static void mix_part(track_t *t, uint32_t n)
             b[i] = ((a + c) >> 1) + mono_buf[i];        /* the pairs' mid, the lone voices whole */
             side_s[i] = (((a - c) >> 1) * 23) >> 5;
         }
+    if (trk_hc[t - trk])                                /* the chord layer: 6 dB down. Up to eight voices of a chord
+                                                         * at once (the HiChord's eight oscillators) sum to four
+                                                         * times full scale; this keeps a full chord clean with the
+                                                         * MASTER at half */
+        for (i = 0; i < n; i++) {
+            b[i] >>= 1;
+            if (paired)
+                side_s[i] >>= 1;
+        }
     if (nr)
         t->tail = 16;                                   /* blocks of DIST state to run out after the last voice */
     else if ((!t->tail || !t->p[P_DIST] || !--t->tail) && !slicer_busy(t)) {

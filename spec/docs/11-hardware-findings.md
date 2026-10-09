@@ -140,6 +140,23 @@ from the k = 1 coefficient table, `hcfx_coef`; also a SOUND menu row; the HiChor
 its app's CC 30), attack and release, and each turn shows its name and value in the header bar
 ("ATTACK 790ms"). KNOB 4 on an effect row still sets the amount. Preset format HCP3.
 
+## Louder after the panning fix: 6 dB, clipping at half volume
+
+Report: much louder, clipping at MASTER near half. The panning fix mixes a lone voice whole where
+it used to be mixed at half, and in real playing most voices are lone: big chords spend the 8-voice
+budget on notes, not partners, and MIDI-driven chords have no partners at all (a host probe with a
+triad, mostly paired, had hidden this: +0.4 dB). The unit's USB tap showed the chord at 2.4× its
+earlier level (RMS 436 vs 180). Now the chord layer's parts are mixed 6 dB down (`trk_hc`, fx.c
+mix_part), so eight voices sum to twice full scale at most and a full chord stays clean with the
+MASTER at half; the tap reads 218 again. The drum modes also cap the part level at 96 (−5 dB).
+The looper replays every note at velocity 100, so bounced drum loops lose their accents: a known gap
+(the event word has no room for velocity).
+
+Note for the record: the knob remap commit did not link on the real toolchain (a 64-bit division in
+the resonance coefficients needs a runtime helper the part lacks; the host has it), so the unit kept
+the previous build and the knobs looked unchanged; fixed with 32-bit divisions. The build step's
+output must be checked for the app line, not only for errors.
+
 ## Numbers
 
 | | |

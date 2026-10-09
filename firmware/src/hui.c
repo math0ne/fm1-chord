@@ -583,6 +583,8 @@ static void hui_mode_set(track_t *t, uint32_t play)
         set_engine_of(t, ENGI_DRUM);
         hc_apply(t);
     } else if (!hui_drum_mode(play) && hui_drum_mode(was)) {
+        if (t->p[P_LEVEL] <= 96)                         /* the drum modes cap the level (hc_apply): back to full */
+            t->p[P_LEVEL] = TP[P_LEVEL].def;
         hc_sound_load(t, c->sound_saved);
     }
     if (play == HP_DRUMLOOP)

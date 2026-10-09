@@ -15,6 +15,7 @@ static uint32_t vage;                                   /* voice ages: one clock
 /* fm1-chord: STEREO partners (hichord.c hc_apply): a POLY note of a paired part starts a second voice, detuned
  * (PAIR_FINE: ~8 cents) on the other side; fx.c mix_part renders the two sides and spreads them */
 static uint8_t trk_pair[NTRK];
+static uint8_t trk_hc[NTRK];                            /* fm1-chord: the part plays the chord layer (fx.c: its trim) */
 #define PAIR_FINE 20
 static int32_t lfo_wave(track_t *t, uint32_t ph)
 {
