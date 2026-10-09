@@ -157,6 +157,15 @@ the resonance coefficients needs a runtime helper the part lacks; the host has i
 the previous build and the knobs looked unchanged; fixed with 32-bit divisions. The build step's
 output must be checked for the app line, not only for errors.
 
+## ACOUSTIC GTR (owner's request)
+
+A plucky acoustic guitar for leads: a new PHYS preset on the string model (STRC 38, just above the
+curved-bridge zone: a nearly pure string; BRIT 66; DAMP 90, a 1.5 s ring; POS 22, picked near the
+bridge; ACC 104; EXC 26, the pick's click), appended to the engine (10 presets) and to the end of the
+sound list (37, so the saved sound indices keep). The physical models sit ~12 dB under Felucca's
+other engines, so their sounds load at LEVEL 127 and skip the chord layer's 6 dB trim (three voices
+cannot sum to eight). `tests/gtr_probe.c` renders a lead line on any sound to a WAV.
+
 ## Numbers
 
 | | |

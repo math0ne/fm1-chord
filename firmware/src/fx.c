@@ -342,7 +342,7 @@ static void mix_part(track_t *t, uint32_t n)
             b[i] = ((a + c) >> 1) + mono_buf[i];        /* the pairs' mid, the lone voices whole */
             side_s[i] = (((a - c) >> 1) * 23) >> 5;
         }
-    if (trk_hc[t - trk])                                /* the chord layer: 6 dB down. Up to eight voices of a chord
+    if (trk_hc[t - trk] && ENGINES[t->engine] != &ENG_PHYS)   /* the chord layer: 6 dB down. Up to eight voices of a chord
                                                          * at once (the HiChord's eight oscillators) sum to four
                                                          * times full scale; this keeps a full chord clean with the
                                                          * MASTER at half */

@@ -40,6 +40,7 @@ static const hc_sound_t HC_SOUNDS[] = {
     {"HORNS", 2, 0, HE_SUSTAIN},    {"E GUITAR", 6, 2, HE_KEYS},     {"KALIMBA", 9, 4, HE_KEYS},
     {"SAW BASS", 0, 7, HE_SHORT},   {"SHIMMER", 8, 3, HE_SWELL},     {"GOSPEL ORGAN", 7, 2, HE_SUSTAIN},
     {"PURE SINE", HCE, 13, HE_LONG},
+    {"ACOUSTIC GTR", 9, 9, HE_KEYS},                    /* fm1-chord: a plucky guitar for LEAD (PHYS) */
 };
 #define HC_NSOUNDS (sizeof HC_SOUNDS / sizeof HC_SOUNDS[0])
 /* the HiChord's ten scales (CC 103 order) -> Felucca's SCALE values */
@@ -209,6 +210,8 @@ static void hc_sound_load(track_t *t, uint32_t idx)
     set_engine_of(t, s->engine);
     if (s->preset)
         apply_preset_to(t, s->preset);
+    t->p[P_LEVEL] = (int16_t)(s->engine == ENGI_PHYS ? 127 : TP[P_LEVEL].def);   /* the physical models sit
+                                                          * ~12 dB under the rest (3 voices): full level, no trim (fx.c) */
     hc_apply(t);
 }
 

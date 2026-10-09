@@ -13,7 +13,8 @@ directions (7ths, 9ths, sus, dim, aug, borrowed chords, in four tables); F#3 cyc
 first is the bass and the next one the chord: Em/C.
 
 **Everything else the HiChord does:** Play, Strum, Lead, Drone, Arp, Repeat, a 16-step chord
-sequencer, drum pads, 56 drum loops, a 4-layer looper, a mixer, Chord Hiro and the Ear Trainer; 36 sounds,
+sequencer, drum pads, 56 drum loops, a 4-layer looper, a mixer, Chord Hiro and the Ear Trainer; 37 sounds
+(the HiChord's, plus an acoustic guitar for leads),
 7 envelope presets, reverb, delay, chorus, flanger, tremolo, vibrato, glide, drive, tape, stereo, a filter
 wheel; key, scale, bass, voices, voice leading; four presets; MIDI in and out. Only the mic features and
 Bluetooth are missing.

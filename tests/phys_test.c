@@ -309,7 +309,7 @@ static void demo_write(const char *dir, const char *name, uint32_t secs, void (*
 }
 
 /* a phrase per preset: (time in 1/8 s, note, length in 1/8 s, velocity); chords share a time */
-#define NPHRASE 9
+#define NPHRASE 10
 static const uint8_t PHRASE[NPHRASE][24][4] = {
     {{0, 84, 6, 110}, {6, 91, 6, 80}, {12, 96, 6, 100}, {20, 88, 8, 70}, {28, 79, 10, 110}, {29, 86, 10, 90},
      {30, 91, 10, 90}, {44, 84, 12, 120}},                                                  /* BELL TREE */
@@ -332,6 +332,9 @@ static const uint8_t PHRASE[NPHRASE][24][4] = {
     {{0, 48, 6, 100}, {1, 55, 6, 90}, {2, 60, 6, 90}, {3, 64, 6, 100}, {4, 67, 6, 90}, {5, 72, 6, 100},
      {12, 53, 6, 100}, {13, 57, 6, 90}, {14, 60, 6, 90}, {15, 65, 6, 100}, {16, 69, 6, 90}, {17, 72, 8, 110},
      {24, 76, 8, 110}},                                                                     /* HARP */
+    {{0, 52, 2, 110}, {2, 55, 2, 90}, {4, 59, 2, 100}, {6, 64, 4, 110}, {10, 62, 2, 80}, {12, 59, 2, 90},
+     {14, 55, 4, 100}, {18, 40, 2, 120}, {20, 47, 2, 100}, {22, 52, 2, 100}, {24, 56, 2, 90}, {26, 59, 8, 110},
+     {26, 64, 8, 90}},                                                                      /* ACOUSTIC GTR */
 };
 static void play_preset(uint32_t f, uint32_t pi)
 {
