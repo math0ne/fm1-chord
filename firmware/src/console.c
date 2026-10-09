@@ -112,6 +112,20 @@ static void con_hc(const char *p)
 {
     char b[16];
     uint32_t i;
+    if (con_word(&p, "key")) {                           /* hc key K 0|1: key K (0 = F3 .. 26 = G5) up / down */
+        int ok = 1;
+        uint32_t k = con_num(&p, &ok), down = con_num(&p, &ok);
+        if (!ok || k >= 27u) {
+            con_puts("usage: hc key K(0..26) 0|1\r\n");
+            return;
+        }
+        if (down)
+            hc_dbg_notes |= 1u << k;
+        else
+            hc_dbg_notes &= ~(1u << k);
+        con_puts("ok\r\n");
+        return;
+    }
     if (con_word(&p, "enc")) {
         int ok = 1, neg = 0;
         uint32_t role = con_num(&p, &ok), st;
@@ -403,7 +417,7 @@ static void con_params(void)
 static void con_exec(const char *p)
 {
     if (con_word(&p, "help") || con_word(&p, "?"))
-        con_puts("status  dbg  inp  crash  params  memr ADDR [LEN]  flr OFF [LEN]  factory yes  hc [enc ROLE STEPS]  uboot yes\r\n");
+        con_puts("status  dbg  inp  crash  params  memr ADDR [LEN]  flr OFF [LEN]  factory yes  hc [enc ROLE STEPS | key K 0|1]  uboot yes\r\n");
     else if (con_word(&p, "status"))
         con_status();
     else if (con_word(&p, "dbg"))

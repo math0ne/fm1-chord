@@ -41,6 +41,7 @@ enum { HDR_OFF, HDR_TUBE, HDR_DRIVE, HDR_DIST, HDR_FUZZ, HDR_COUNT };
 enum { HTP_OFF, HTP_LOFI, HTP_VINYL, HTP_TAPE, HTP_COUNT };
 static const char *const HL_NAME[2] = {"DEGREE", "PIANO"};
 static const char *const HB_NAME[3] = {"OFF", "ROOT", "SLASH"};
+static volatile uint32_t hc_dbg_notes;                  /* keys held from the console (`hc key K 0|1`): a bit per key */
 static const char *const HP_NAME[HP_COUNT] = {"PLAY", "STRUM", "LEAD", "DRONE", "ARP", "REPEAT", "SEQUENCER", "DRUM",
                                               "DRUM LOOP", "CHORD HIRO", "EAR TRAINER", "MIXER"};
 static const char *const HST_NAME[3] = {"SLOW", "MEDIUM", "FAST"};

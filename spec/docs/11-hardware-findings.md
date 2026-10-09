@@ -96,6 +96,21 @@ one ringed), the live layer's state, and a bar of the loop with its bars ticked.
 reads "REC  BAR n" and fills red; a free first recording fills against BARS (or the bar it is in).
 `hui_shot` renders it as `mode_drumloop_rec`.
 
+## Lists instead of cycling (owner's choice)
+
+ENV and LFO no longer cycle: they open a page (ENVELOPE, LFO) listing the choices, SELECT moves the
+choice and applies it as it moves, the same button or HOME closes it. The PRESETS and ALGORITHM
+knobs show their list (SOUND, MODE) while they turn; it closes 1.5 s after the last turn or on any
+button, which then acts as on HOME. One screen (`HU_PICK`, `hui_pick_*`, `hui_draw_pick`); shots
+`pick_env`, `pick_sound`.
+
+## Keys from the console
+
+`hc key K 0|1` holds or releases key K (0 = F3 .. 26 = G5) through the keyboard scan (`hc_dbg_notes`
+in hichord.c, ORed into the scan in seq.c keyboard_block), so chord gestures can be played on the
+unit from a script and read back with `hc`. Checked after a reboot: `hc key 7 1` gives C with its
+bass (24 48 52 55 60 67), `hc key 11 1` on top gives "Em/C" with 24 52 55 59 64 71 and no 48.
+
 ## Numbers
 
 | | |

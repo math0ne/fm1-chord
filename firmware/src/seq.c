@@ -447,7 +447,7 @@ static __attribute__((noinline)) void kb_lat(uint32_t k)
 
 static void keyboard_block(void)
 {
-    uint32_t cur = fm1_in.notes, ch, k;
+    uint32_t cur = fm1_in.notes | hc_dbg_notes, ch, k;   /* (hc_dbg_notes: the console pressing keys, console.c) */
     ch = cur ^ kb_prev;                           /* keys also sound while entering steps */
     if (!ch)
         return;

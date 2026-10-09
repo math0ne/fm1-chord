@@ -87,6 +87,12 @@ int main(int argc, char **argv)
     press(B_FX);
     hframes(3);
     ppm(argv[1], "menu_sound");
+    press(B_HOME); press(B_ENV); hframes(3);             /* the ENVELOPE page */
+    ppm(argv[1], "pick_env");
+    press(B_ENV); turn(EN_PRESET, 1); hframes(2);         /* the sound list while the PRESETS knob turns */
+    ppm(argv[1], "pick_sound");
+    fm1_ms += 1600; hframes(2); turn(EN_PRESET, -1); fm1_ms += 1600; hframes(2);
+    hui_open(HU_SOUND); hframes(2);
     hui.sel[HU_SOUND] = RS_REV; hframes(3);              /* an effect row: the amount, KNOB 4's hint */
     ppm(argv[1], "menu_sound_amount");
     hui.sel[HU_SOUND] = RS_SOUND; hframes(2);

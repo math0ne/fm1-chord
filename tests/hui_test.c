@@ -196,9 +196,29 @@ static int test_mode_menu_knobs(void)
     press(B_OCTDN); press(B_OCTDN); press(B_OCTDN);
     bad += check("  OCT- thrice: -2 (the floor)", song.octave == -2);
     press(B_ENV);
-    bad += check("ENV: the next envelope (SHORT)", hc.t[0].env == HE_SHORT && msg_is2("SHORT"));
+    bad += check("ENV: the ENVELOPE list opens, the choice unchanged", hui.screen == HU_PICK && hui.pick_kind == PK_ENV &&
+                 hui.pick_sticky && hc.t[0].env == HE_LONG);
+    turn(EN_SELECT, 1);
+    bad += check("  SELECT: the next envelope (SHORT), applied, the list stays", hc.t[0].env == HE_SHORT && hui.screen == HU_PICK);
+    press(B_ENV);
+    bad += check("  ENV again: back to HOME", hui.screen == HU_HOME);
     press(B_LFO);
-    bad += check("LFO: vibrato LOW", hc.t[0].lfo == HLF_LOW);
+    turn(EN_SELECT, 1);
+    bad += check("LFO: its list, SELECT: vibrato LOW", hui.screen == HU_PICK && hui.pick_kind == PK_LFO && hc.t[0].lfo == HLF_LOW);
+    press(B_HOME);
+    bad += check("  HOME closes it", hui.screen == HU_HOME);
+    turn(EN_PRESET, 1);
+    bad += check("PRESETS knob: the sound list shows while it turns", hui.screen == HU_PICK && hui.pick_kind == PK_SOUND && !hui.pick_sticky);
+    turn(EN_SELECT, 1);
+    bad += check("  SELECT moves it too (the next sound)", hc.t[0].sound == 3u);
+    fm1_ms += 1600; frame();
+    bad += check("  gone 1.5 s after the last turn", hui.screen == HU_HOME);
+    turn(EN_ALGO, 1);
+    bad += check("ALGORITHM knob: the mode list", hui.screen == HU_PICK && hui.pick_kind == PK_MODE);
+    press(B_OCTUP);
+    bad += check("  a button closes it and acts as on HOME (the octave)", hui.screen == HU_HOME && song.octave == -1);
+    press(B_OCTDN); turn(EN_PRESET, -2);
+    fm1_ms += 1600; frame();
     press(B_ARP);
     bad += check("ARP: ARP mode", hc.t[0].play == HP_ARP);
     press(B_ARP);
@@ -652,6 +672,37 @@ static int test_drums_under_chords(void)
     return bad;
 }
 
+/* the first thing after power-on (the device's order: the layer, the settings, Felucca's init, the first
+ * frames): BASS SLASH from the defaults, a bass key held and a chord key pressed */
+static int test_slash_first_thing(void)
+{
+    int bad = 0;
+    track_t *t = &trk[0];
+    uint32_t i, g = 0;
+    hui_power_on();
+    run_ms2(100);                                      /* (the sound load at the first frame: an engine switch over blocks) */
+    bad += check("power-on: BASS SLASH, the chord layer on the track", hc.t[0].bass == HB_SLASH && hc_on(t) && t->p[P_CHRD] == CH_HI);
+    key_down(7);                                       /* C held: C major with its root bass */
+    run_ms2(60);
+    for (i = 0; i < NVOICE; i++) g += t->v[i].active && t->v[i].gate;
+    printf("    [first chord] name %s gated %u notes:", hc.name, g);
+    for (i = 0; i < NVOICE; i++) if (t->v[i].active) printf(" %d%s", t->v[i].note, t->v[i].gate ? "" : "(rel)");
+    printf("  bass %d voices %d stereo %d pair %d play %d\n", hc.t[0].bass, hc.t[0].voices, hc.t[0].stereo, trk_pair[0], hc.t[0].play);
+    bad += check("  the first chord: C with its bass (C1 C E G, voices 8 with partners)", str_eq(hc.name, "C") && gate_on(0, 24) && gate_on(0, 48) && g >= 4u);
+    key_up(7); run_ms2(60); key_down(7); run_ms2(60);
+    for (g = 0, i = 0; i < NVOICE; i++) g += t->v[i].active && t->v[i].gate;
+    printf("    [second time] name %s gated %u notes:", hc.name, g);
+    for (i = 0; i < NVOICE; i++) if (t->v[i].active) printf(" %d%s", t->v[i].note, t->v[i].gate ? "" : "(rel)");
+    printf("\n");
+    key_down(11);                                      /* E pressed on top: Em/C */
+    run_ms2(60);
+    bad += check("  the second key on top: Em/C, C1 under E G B, the C chord gone", str_eq(hc.name, "Em/C") && gate_on(0, 24) &&
+                 gate_on(0, 52) && gate_on(0, 59) && !gate_on(0, 48));
+    key_up(11); key_up(7);
+    run_ms2(60);
+    return bad;
+}
+
 static int test_live_persist(void)
 {
     int bad = 0;
@@ -677,7 +728,7 @@ static int test_live_persist(void)
 
 int main(void)
 {
-    int bad = test_boot_and_menus() + test_key_menu() + test_sound_menu() + test_mode_menu_knobs() + test_presets() +
+    int bad = test_slash_first_thing() + test_boot_and_menus() + test_key_menu() + test_sound_menu() + test_mode_menu_knobs() + test_presets() +
               test_draw_and_handover() + test_looper() + test_seq_drums_mixer() + test_games() + test_live_persist() +
               test_fx_amount() + test_drums_under_chords();
     printf("%s\n", bad ? "HUI TEST FAILED" : "hichord ui test passed");

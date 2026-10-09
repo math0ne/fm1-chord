@@ -53,7 +53,7 @@ static const char *const HP_SHORT[HP_COUNT] = {"PLAY", "STRUM", "LEAD", "DRONE",
                                                "EAR", "MIXER"};   /* (the header band) */
 
 /* ------------------------------------------------------------- state --- */
-enum { HU_HOME, HU_KEY, HU_SOUND, HU_MODE, HU_PRESET, HU_LOOP, HU_N };
+enum { HU_HOME, HU_KEY, HU_SOUND, HU_MODE, HU_PRESET, HU_LOOP, HU_PICK, HU_N };   /* HU_PICK: a list (hui_pick_*) */
 enum { RL_L1, RL_L2, RL_L3, RL_L4, RL_BARS, RL_METRO, RL_CLEAR, RL_N };   /* (RL_L1 + HCL_LAYERS - 1 = RL_L4) */
 enum { RK_KEY, RK_OCT, RK_SCALE, RK_LAYOUT, RK_JOY, RK_BASS, RK_VOICES, RK_VLEAD, RK_RANDOM, RK_N };
 enum { RS_SOUND, RS_ENV, RS_ATK, RS_REL, RS_FILT, RS_CUT, RS_HP, RS_REV, RS_DLY, RS_CHO, RS_FLG, RS_TREM, RS_LFO,
@@ -61,9 +61,9 @@ enum { RS_SOUND, RS_ENV, RS_ATK, RS_REL, RS_FILT, RS_CUT, RS_HP, RS_REV, RS_DLY,
 enum { RM_MODE, RM_BPM, RM_STRUM, RM_APAT, RM_ARATE, RM_ALAYER, RM_SEQLEN, RM_KIT, RM_DLSTYLE, RM_DLVAR, RM_SONG, RM_DIFF,
        RM_SPEED, RM_LEVEL, RM_RANDOM, RM_N };
 #define HC_BLUE RGB(80, 150, 255)
-static const char *const HU_TITLE[HU_N] = {"", "KEY", "SOUND", "MODE", "PRESETS", "LOOPER"};
-static const uint16_t HU_COL[HU_N] = {0, HC_GREY, HC_YELLOW, HC_RED, HC_GREEN, HC_BLUE};
-static const uint8_t HU_ROWS[HU_N] = {0, RK_N, RS_N, RM_N, 4, RL_N};
+static const char *const HU_TITLE[HU_N] = {"", "KEY", "SOUND", "MODE", "PRESETS", "LOOPER", ""};
+static const uint16_t HU_COL[HU_N] = {0, HC_GREY, HC_YELLOW, HC_RED, HC_GREEN, HC_BLUE, 0};
+static const uint8_t HU_ROWS[HU_N] = {0, RK_N, RS_N, RM_N, 4, RL_N, 0};
 static const char *const RL_LABEL[RL_N] = {"LAYER 1", "LAYER 2", "LAYER 3", "LAYER 4", "BARS", "METRONOME", "CLEAR ALL"};
 static const char *const RK_LABEL[RK_N] = {"KEY", "OCTAVE", "SCALE", "LAYOUT", "JOYSTICK", "BASS", "VOICES", "VOICE LEAD",
                                            "RANDOMIZE ALL"};
@@ -96,6 +96,9 @@ static struct {
     uint8_t out_line;            /* OUT LEVEL: LINE (-10 dB) */
     uint32_t rnd;
     uint8_t preset_used[4];      /* P1..P4 hold something */
+    uint8_t pick_kind;           /* HU_PICK: PK_* */
+    uint8_t pick_sticky;         /* opened by ENV / LFO (stays), else by a knob (goes 1.5 s after the last turn) */
+    uint32_t pick_ms;            /* the last turn */
 } hui = {.on = HUI_DEFAULT, .rnd = 0x9E3779B9u};
 static int hui_active(void) { return hui.on; }
 static void hui_mode_set(track_t *t, uint32_t play);   /* below: the mode, with the drum engine swap */
@@ -591,6 +594,50 @@ static void hui_looper_advance(void)
 }
 
 /* --------------------------------------------------------------- input --- */
+/* The lists (HU_PICK): ENVELOPE and LFO as pages (the ENV / LFO buttons), the SOUND and MODE lists shown
+ * while the PRESETS / ALGORITHM knob turns. SELECT moves the choice, applied as it moves */
+enum { PK_ENV, PK_LFO, PK_SOUND, PK_MODE };
+static uint32_t hui_pick_count(uint32_t k)
+{
+    return k == PK_ENV ? HE_COUNT : k == PK_LFO ? HLF_COUNT : k == PK_SOUND ? (uint32_t)HC_NSOUNDS : HP_COUNT;
+}
+static const char *hui_pick_name(uint32_t k, uint32_t i)
+{
+    return k == PK_ENV ? HE_NAME[i % HE_COUNT] : k == PK_LFO ? HLF_NAME[i % HLF_COUNT] :
+           k == PK_SOUND ? HC_SOUNDS[i % HC_NSOUNDS].name : HP_NAME[i % HP_COUNT];
+}
+static uint32_t hui_pick_cur(uint32_t k)
+{
+    const hc_trk_t *c = hui_c();
+    return k == PK_ENV ? c->env : k == PK_LFO ? c->lfo : k == PK_SOUND ? c->sound : c->play;
+}
+static void hui_pick_apply(uint32_t k, uint32_t i)
+{
+    hc_trk_t *c = hui_c();
+    switch (k) {
+    case PK_ENV: c->env = (uint8_t)(i % HE_COUNT); c->atk = c->rel = 0; hui_apply(); break;
+    case PK_LFO: c->lfo = (uint8_t)(i % HLF_COUNT); hui_apply(); break;
+    case PK_SOUND: hc_sound_load(TSEL, i % HC_NSOUNDS); break;
+    default: hui_mode_set(TSEL, i % HP_COUNT); break;
+    }
+}
+static void hui_pick_open(uint32_t k, int sticky)
+{
+    hui.pick_kind = (uint8_t)k;
+    hui.pick_sticky = (uint8_t)sticky;
+    hui.pick_ms = fm1_ms;
+    if (hui.screen != HU_PICK) {
+        hui.screen = HU_PICK;
+        hui.force = 1;
+    }
+}
+static void hui_pick_move(int32_t s)
+{
+    uint32_t k = hui.pick_kind, n = hui_pick_count(k);
+    hui_pick_apply(k, (uint32_t)clamp((int32_t)hui_pick_cur(k) + s, 0, (int32_t)n - 1));
+    hui.pick_ms = fm1_ms;
+}
+
 static void hui_open(uint32_t screen)
 {
     if (hui.screen == screen)
@@ -631,6 +678,12 @@ static void hui_input(void)
     fm1_input_note_edges();                              /* (the keys are the ISR's: nothing of the UI's) */
     fm6_poll();
     hui_live_poll();
+    if (sc == HU_PICK && !hui.pick_sticky && (pressed || (uint32_t)(fm1_ms - hui.pick_ms) > 1500u)) {
+        hui.screen = HU_HOME;                            /* a knob's list: over (a button acts as on HOME) */
+        hui.force = 1;
+        sc = HU_HOME;
+        nrows = HU_ROWS[sc];
+    }
     kb_mask = perf_mask = 0;                             /* no layer takes the keys */
     song.grid = 0;
     song.seq_mode = 0;
@@ -659,16 +712,21 @@ static void hui_input(void)
         else
             hui_open(HU_PRESET);
     }
-    if (DOWN(B_ENV)) {
-        c->env = (uint8_t)((c->env + 1u) % HE_COUNT);
-        c->atk = c->rel = 0;
-        hui_say(HE_NAME[c->env]);
-        hui_apply();
+    if (DOWN(B_ENV)) {                                   /* the ENVELOPE page (again: back) */
+        if (hui.screen == HU_PICK && hui.pick_sticky && hui.pick_kind == PK_ENV) {
+            hui.screen = HU_HOME;
+            hui.force = 1;
+        } else {
+            hui_pick_open(PK_ENV, 1);
+        }
     }
-    if (DOWN(B_LFO)) {
-        c->lfo = (uint8_t)((c->lfo + 1u) % HLF_COUNT);
-        hui_say(c->lfo ? "LFO" : "LFO OFF");
-        hui_apply();
+    if (DOWN(B_LFO)) {                                   /* the LFO page */
+        if (hui.screen == HU_PICK && hui.pick_sticky && hui.pick_kind == PK_LFO) {
+            hui.screen = HU_HOME;
+            hui.force = 1;
+        } else {
+            hui_pick_open(PK_LFO, 1);
+        }
     }
     if (DOWN(B_ARP)) {
         hui_mode_set(TSEL, c->play == HP_ARP ? HP_PLAY : HP_ARP);
@@ -705,17 +763,19 @@ static void hui_input(void)
         } else if (sc == HU_HOME) {
             hui_key_set(TSEL->p[P_ROOT] + s);
             hc.dirty = 1;
+        } else if (sc == HU_PICK) {
+            hui_pick_move(s);
         } else if (nrows) {
             hui.sel[sc] = (uint8_t)clamp((int32_t)hui.sel[sc] + s, 0, (int32_t)nrows - 1);
         }
     }
-    if ((s = panel_enc(EN_ALGO)) != 0) {
+    if ((s = panel_enc(EN_ALGO)) != 0) {                 /* the mode, its list shown while the knob turns */
         hui_mode_set(TSEL, hui_cycle(c->play, s, HP_COUNT));
-        hui_say(HP_NAME[c->play]);
+        hui_pick_open(PK_MODE, 0);
     }
-    if ((s = panel_enc(EN_PRESET)) != 0) {
+    if ((s = panel_enc(EN_PRESET)) != 0) {               /* the sound, its list shown while the knob turns */
         hc_sound_load(TSEL, hui_cycle(c->sound, s, HC_NSOUNDS));
-        hui_say(HC_SOUNDS[c->sound].name);
+        hui_pick_open(PK_SOUND, 0);
     }
     if ((s = panel_enc(EN_K1)) != 0) {
         c->cutoff = (uint8_t)clamp(c->cutoff + s * 3, 0, 127);
@@ -785,13 +845,15 @@ static void hui_leds(void)
 {
     uint8_t nl[FM1_NCOL] = {0}, nd[FM1_NCOL] = {0};
     uint32_t k, c, held = fm1_in.notes | hc.latched;
-    static const uint8_t MENU_BTN[HU_N] = {B_HOME, B_SCL, B_FX, B_EDIT, B_SAVE};
+    static const uint8_t MENU_BTN[HU_N] = {B_HOME, B_SCL, B_FX, B_EDIT, B_SAVE, B_HOME, B_HOME};
     static uint8_t ready;
     if (!ready) {
         led_pos_init();
         ready = 1;
     }
     led_put(nl, panel.btn[MENU_BTN[hui.screen]], 1);
+    if (hui.screen == HU_PICK && hui.pick_sticky)
+        led_put(nl, panel.btn[hui.pick_kind == PK_ENV ? B_ENV : B_LFO], 1);
     if (hui_c()->play == HP_ARP)
         led_put(nl, panel.btn[B_ARP], 1);
     led_put(nl, panel.btn[B_REC], hcl_count(HLS_REC) != 0u || (hcl_count(HLS_ARMED) != 0u && ((fm1_ms / 250u) & 1u) == 0u));
@@ -865,7 +927,8 @@ static void hui_draw_head(void)
 /* the footer: the four menu buttons, coloured (HOME); a menu's hints */
 static void hui_draw_foot(void)
 {
-    uint32_t sig = hui.screen * 7u + 1u + (hui.screen == HU_SOUND && hui_fx_row(hui.sel[HU_SOUND]) ? 3u : 0u);
+    uint32_t sig = hui.screen * 7u + 1u + (hui.screen == HU_SOUND && hui_fx_row(hui.sel[HU_SOUND]) ? 3u : 0u) +
+                   (hui.screen == HU_PICK ? hui.pick_kind * 11u + hui.pick_sticky * 13u : 0u);
     if (!hui.force && sig == hui.sig[3])
         return;
     hui.sig[3] = sig;
@@ -888,6 +951,9 @@ static void hui_draw_foot(void)
             h[n++] = (hint_t){KC_SELECT, "LAYER", "LAYR", T_KEY, T_INK};
             h[n++] = (hint_t){KC_REC, "REC", "REC", HC_RED, HC_INK};
             h[n++] = (hint_t){KC_PLAY, "PLAY", "PLAY", HC_GREEN, HC_INK};
+            h[n++] = (hint_t){KC_HOME, "BACK", "BACK", T_KEY, T_INK};
+        } else if (hui.screen == HU_PICK) {
+            h[n++] = (hint_t){KC_SELECT, "CHOOSE", "PICK", T_KEY, T_INK};
             h[n++] = (hint_t){KC_HOME, "BACK", "BACK", T_KEY, T_INK};
         } else if (hui.screen == HU_SOUND && hui_fx_row(hui.sel[HU_SOUND])) {   /* an effect row: KNOB 4 = its amount */
             h[n++] = (hint_t){KC_SELECT, "ROW", "ROW", T_KEY, T_INK};
@@ -1364,6 +1430,55 @@ static void hui_draw_menu_head(void)
     cv_blit(0, 0);
 }
 
+/* a list: its title, the choices with the current one marked (scrolled to it), a scroll bar */
+static void hui_draw_pick(void)
+{
+    static const char *const TITLE[4] = {"ENVELOPE", "LFO", "SOUND", "MODE"};
+    static const char *const SUB[4] = {"ENV: BACK", "LFO: BACK", "PRESETS KNOB", "ALGORITHM KNOB"};
+    uint32_t k = hui.pick_kind % 4u, n = hui_pick_count(k), cur = hui_pick_cur(k), i, top, pass;
+    uint16_t col = k == PK_MODE ? HC_RED : HC_YELLOW, ink = k == PK_MODE ? RGB(255, 240, 240) : HC_INK;
+    uint32_t sig = 0x50494Bu + k * 7u + cur * 13u + n * 3u;
+    if (cur >= hui.top[HU_PICK] + HU_NROWS_SHOWN)
+        hui.top[HU_PICK] = (uint8_t)(cur - HU_NROWS_SHOWN + 1u);
+    if (cur < hui.top[HU_PICK])
+        hui.top[HU_PICK] = (uint8_t)cur;
+    top = hui.top[HU_PICK];
+    sig += top * 131u;
+    if (!hui.force && sig == hui.sig[1])
+        return;
+    hui.sig[1] = sig;
+    hui.sig[0] = 0;
+    cv_begin(240, HU_ROWS_Y, T_BG);
+    cv_rrect(0, 0, 240, HU_HEAD, 0, col, T_BG);
+    cv_text_on(8, 4, &AF_M, TITLE[k], ink, col);
+    cv_text_r(232, 6, &AF_S, SUB[k], ink, col);
+    cv_blit(0, 0);
+    for (pass = 0; pass < 2u; pass++) {
+        int32_t y0 = pass ? HU_ROWS_Y + 124 : HU_ROWS_Y;
+        uint32_t h = pass ? (uint32_t)(HU_FOOT_Y - HU_ROWS_Y - 124) : 124u;
+        cv_begin(240, h, T_BG);
+        cv_oy = -y0;
+        for (i = top; i < n && i < top + HU_NROWS_SHOWN; i++) {
+            int32_t y = HU_ROWS_Y + (int32_t)(i - top) * HU_ROW;
+            int sel = i == cur;
+            uint16_t bg = sel ? T_SURF : T_BG;
+            if (y + HU_ROW <= y0 || y >= y0 + (int32_t)h)
+                continue;
+            cv_rrect(4, y, 232, HU_ROW - 2, 5, bg, T_BG);
+            if (sel)
+                cv_rrect(4, y, 5, HU_ROW - 2, 2, col, bg);
+            cv_text_on(16, y + 3, &AF_M, hui_pick_name(k, i), sel ? col : T_MID, bg);
+        }
+        if (n > HU_NROWS_SHOWN) {
+            int32_t bar = (HU_FOOT_Y - HU_ROWS_Y - 6), th = bar * HU_NROWS_SHOWN / (int32_t)n;
+            cv_rrect(237, HU_ROWS_Y + 2, 2, bar, 1, T_LINE, T_BG);
+            cv_rrect(237, HU_ROWS_Y + 2 + (bar - th) * (int32_t)top / (int32_t)(n - HU_NROWS_SHOWN), 2, th, 1, col, T_LINE);
+        }
+        cv_oy = 0;
+        cv_blit(0, y0);
+    }
+}
+
 static void hui_draw(void)
 {
     if (hui.force)
@@ -1373,6 +1488,8 @@ static void hui_draw(void)
     if (hui.screen == HU_HOME) {
         hui_draw_head();
         hui_draw_home();
+    } else if (hui.screen == HU_PICK) {
+        hui_draw_pick();
     } else {
         hui_draw_menu_head();
         hui_draw_menu();
