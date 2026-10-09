@@ -14,6 +14,16 @@ Almost everything is possible on the host:
 
 What needs hardware: CPU load on pi32v2 (voice budget, FX headroom, looper limits), flashing and the update loader, the recovery dongle, encoder calibration, latency and speaker behaviour.
 
+## 0b. First flash (2026-10-08)
+
+The unit arrived already on Felucca (identity FM-1_900), so the stock dump of section 2 was moot;
+the way back to stock is M-VAVE's official `FM-1.fwsc` through the same installer. v0.1 went on
+from Windows: Python 3.12 (3.13 has no python-rtmidi wheel), `pip install mido python-rtmidi`,
+`fm1_install.py fm1-chord-0.1.fwsc --yes` (about two minutes, identity FM-1_901 after the restart).
+The console is a USB serial device (COM6, 115200): `status` showed 28 % CPU at idle, audio_late 2,
+batt_raw 602. Recovery without a dongle: the boot guard enters uboot after two failed boots, and
+OCT- + OCT+ held 5 s does the same; the installer then finishes the write.
+
 ## 0a. Phase 0 status (done 2026-10-05, in WSL Ubuntu 24.04)
 
 Layout in WSL (canonical from now on; the Windows folder is a mirror):
