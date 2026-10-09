@@ -27,6 +27,33 @@ with int64 products and rounding (states within ±2^24, inputs up to ±2^17 so m
 still sees everything). Host probe (`tests/hcfx_probe.c OUT MASTER_Q12`) at MASTER 256: highs cut
 to a third at 64 and a thirtieth at 20 with no floor; the unit's USB tap shows the same proportions.
 
+## Slash chords sounded as two chords
+
+Report: two keys at once did not behave as a slash chord. With BASS set to SLASH the second key's chord
+did take the first key's root as its bass and the name read "Em/C", but the first key's own chord kept
+sounding under it: two chords. The HiChord's diagram of Am/C is C A C E, the bass and the chord only.
+Now (`hc_slash_take`, hichord.c): when the chord key comes down, the held bass key's chord stops and
+only its bass note remains; letting the chord key go while the bass key is held brings that key's
+own chord back; letting the bass key go first re-voices the chord over its own root; a further key
+is the new chord over the same bass. The home screen names the chord key, not the bass key.
+BASS is OFF by default, as on the HiChord: KEY menu → BASS → SLASH turns it on.
+
+## Inversions on the display
+
+INVERT (F#3, tapped while a key is held) cycles the key's inversion; it now shows: the chord is named
+over its lowest note when no bass voice is on (C, C/E, C/G, as written), and the degree line carries
+"1ST INV" / "2ND INV" in every bass mode. With BASS ROOT or SLASH the bass voice is the lowest note
+and names the chord (none, or /bass).
+
+## The chord settings across power-off
+
+The HiChord keeps its sound, effects, mode, inversions and chord locks across power-off and resets
+only key, scale, octave and tempo. Ours started from the defaults at every boot, so every reflash
+(a reboot) also dropped BASS back to OFF, which is what the unit reported while slash chords seemed
+not to work. Now the live state is packed like a preset into the settings record (PER6, `hcl`),
+saved 3 s after the last change (one flash erase per edit session) and restored at boot
+(`hui_live_restore`, main.c). Key, scale, octave and tempo are Felucca's song and still reset.
+
 ## Numbers
 
 | | |

@@ -583,10 +583,33 @@ static int test_games(void)
     return bad;
 }
 
+static int test_live_persist(void)
+{
+    int bad = 0;
+    track_t *t = &trk[0];
+    hui_power_on();
+    memset(hc_live, 0, sizeof hc_live);
+    hc.t[0].bass = HB_SLASH; hc.t[0].rev = HRV_HALL; hc.inv[7] = 2; hc.lock[9].on = 1; hc_apply(t);
+    fm1_ms += 600; hui_live_poll();
+    bad += check("live state: a change is noticed within 500 ms and packed", hui_live.dirty && hc_live[0]);
+    fm1_ms += 2000; hui_live_poll();
+    bad += check("  not saved yet 2 s later (the knob may still be turning)", hui_live.dirty);
+    fm1_ms += 1500; hui_live_poll();
+    bad += check("  saved 3 s after the last change", !hui_live.dirty);
+    hc_init();                                         /* power off, on */
+    bad += check("  a fresh boot starts from the defaults", hc.t[0].bass == HB_OFF && hc.inv[7] == 0);
+    hui_live_restore();
+    bad += check("  restored: BASS SLASH, the reverb, the inversion and the lock", hc.t[0].bass == HB_SLASH &&
+                 hc.t[0].rev == HRV_HALL && hc.inv[7] == 2 && hc.lock[9].on);
+    hc.t[0].bass = HB_OFF; hc.t[0].rev = 0; hc.inv[7] = 0; hc.lock[9].on = 0; hc_apply(t);
+    memset(hc_live, 0, sizeof hc_live);
+    return bad;
+}
+
 int main(void)
 {
     int bad = test_boot_and_menus() + test_key_menu() + test_sound_menu() + test_mode_menu_knobs() + test_presets() +
-              test_draw_and_handover() + test_looper() + test_seq_drums_mixer() + test_games();
+              test_draw_and_handover() + test_looper() + test_seq_drums_mixer() + test_games() + test_live_persist();
     printf("%s\n", bad ? "HUI TEST FAILED" : "hichord ui test passed");
     return bad != 0;
 }

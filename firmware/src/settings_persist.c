@@ -14,20 +14,24 @@ typedef struct {
     uint32_t bold;
     struct { uint8_t factory[16][32]; uint32_t user, filter; } favorites;
     uint8_t hcp[4][HC_PRESET_BYTES];
+    uint8_t hcl[HC_PRESET_BYTES];                /* PER6: the live HiChord state, back after power-off (hui.c) */
 } persist_t;
-#define PERSIST_MAGIC 0x50455235u
+#define PERSIST_MAGIC 0x50455236u
+#define PERSIST_MAGIC_V5 0x50455235u
 #define PERSIST_MAGIC_V4 0x50455234u
 static uint8_t hc_presets[4][HC_PRESET_BYTES];   /* the presets as last imported / saved (hui.c reads and writes) */
+static uint8_t hc_live[HC_PRESET_BYTES];         /* the live state as last imported / saved (hui.c hui_live_poll) */
 
 /* Normalize in place; 1 = current, 2 = migrated, 0 = invalid. */
 static int settings_import(persist_t *p, int n)
 {
     int current = n == (int)sizeof *p && p->magic == PERSIST_MAGIC;
-    int old4 = n == (int)(sizeof *p - sizeof p->hcp) && p->magic == PERSIST_MAGIC_V4;
-    int old3 = n == (int)(sizeof *p - sizeof p->hcp - sizeof p->favorites) && p->magic == 0x50455233u;
-    int old2 = n == (int)(sizeof *p - sizeof p->hcp - sizeof p->favorites - sizeof p->bold) && p->magic == 0x50455232u;
+    int old5 = n == (int)(sizeof *p - sizeof p->hcl) && p->magic == PERSIST_MAGIC_V5;
+    int old4 = n == (int)(sizeof *p - sizeof p->hcl - sizeof p->hcp) && p->magic == PERSIST_MAGIC_V4;
+    int old3 = n == (int)(sizeof *p - sizeof p->hcl - sizeof p->hcp - sizeof p->favorites) && p->magic == 0x50455233u;
+    int old2 = n == (int)(sizeof *p - sizeof p->hcl - sizeof p->hcp - sizeof p->favorites - sizeof p->bold) && p->magic == 0x50455232u;
     int old1 = n == (int)(8u + sizeof(panel_t)) && p->magic == 0x50455231u;
-    if (!(current || old4 || old3 || old2 || old1)) return 0;
+    if (!(current || old5 || old4 || old3 || old2 || old1)) return 0;
     if (old1) {
         panel_t old;
         memcpy(&old, (uint8_t *)p + 8, sizeof old);
@@ -36,8 +40,10 @@ static int settings_import(persist_t *p, int n)
     }
     if (old1 || old2) p->bold = 0;
     if (old1 || old2 || old3) memset(&p->favorites, 0, sizeof p->favorites);
-    if (!current) memset(p->hcp, 0, sizeof p->hcp);
+    if (!(current || old5)) memset(p->hcp, 0, sizeof p->hcp);
+    if (!current) memset(p->hcl, 0, sizeof p->hcl);
     memcpy(hc_presets, p->hcp, sizeof hc_presets);
+    memcpy(hc_live, p->hcl, sizeof hc_live);
     p->magic = PERSIST_MAGIC;
     p->palette = palette_to_stored(palette_from_stored(p->palette));
     settings.magic = SETTINGS_MAGIC;
@@ -77,4 +83,5 @@ static void settings_export(persist_t *p)
     memcpy(&p->favorites, &favorites, sizeof favorites);
 #endif
     memcpy(p->hcp, hc_presets, sizeof p->hcp);
+    memcpy(p->hcl, hc_live, sizeof p->hcl);
 }

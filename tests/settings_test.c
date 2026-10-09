@@ -51,12 +51,14 @@ int main(void)
     assert(!p.lowcut && p.bold == 1 && p.favorites.user == (1u << 31));   /* bold: kept as saved */
     assert(p.favorites.factory[8][0] == 1 && p.favorites.filter == 1);
     assert(p.panel.enc[0] == 3); /* saving one feature preserves the other */
+    p = original; p.magic = PERSIST_MAGIC_V5;
+    assert(settings_import(&p, sizeof p - sizeof p.hcl) == 2);   /* PER5: the live HiChord state empty */
     p = original; p.magic = 0x50455233u;
-    assert(settings_import(&p, sizeof p - sizeof p.hcp - sizeof p.favorites) == 2);
+    assert(settings_import(&p, sizeof p - sizeof p.hcl - sizeof p.hcp - sizeof p.favorites) == 2);
     assert(p.bold == 1 && !p.favorites.user && !p.favorites.filter);
     settings_export(&p); assert(p.bold == 1); /* favorites-only preserves PER3 font */
     p = original; p.magic = 0x50455232u;
-    assert(settings_import(&p, sizeof p - sizeof p.hcp - sizeof p.favorites - sizeof p.bold) == 2);
+    assert(settings_import(&p, sizeof p - sizeof p.hcl - sizeof p.hcp - sizeof p.favorites - sizeof p.bold) == 2);
     assert(!p.bold && !p.favorites.user && settings.zoom && panel.enc[0] == 3);
     p = original; p.magic = 0x50455231u;
     memcpy((uint8_t *)&p + 8, &PANEL_DEFAULT, sizeof(panel_t));

@@ -353,9 +353,32 @@ static int bass_voices_leading(void)
     key_down(K_E4);
     bad += check("BASS SLASH: the first key held is the bass of the next (Em/C: C1 under E G B)", str_eq(hc.name, "Em/C") &&
                  gate_note(t, 24) && gate_note(t, 52) && gate_note(t, 55) && gate_note(t, 59));
+    bad += check("  the bass key gives its bass note only: its own chord stopped (no C3), 4 notes",
+                 !gate_note(t, 48) && ngated(t) == 4u);
+    key_up(K_E4);
+    bad += check("  the chord key let go, the bass key held: its own chord returns (C1 C E G)", str_eq(hc.name, "C") &&
+                 gate_note(t, 24) && gate_note(t, 48) && gate_note(t, 52) && gate_note(t, 55) && !gate_note(t, 59));
+    key_down(K_E4);
+    bad += check("  pressed again: Em/C again", str_eq(hc.name, "Em/C") && gate_note(t, 24) && !gate_note(t, 48));
+    key_up(K_C4);
+    bad += check("  the bass key let go first: Em over its own root (E1 E G B)", str_eq(hc.name, "Em") &&
+                 gate_note(t, 28) && !gate_note(t, 24) && gate_note(t, 52) && gate_note(t, 59));
+    key_down(K_C4);
+    bad += check("  a key after the chord key is the chord, the held one the bass: C/E", str_eq(hc.name, "C/E") &&
+                 gate_note(t, 28) && gate_note(t, 48) && !gate_note(t, 59));
     key_up(K_E4); key_up(K_C4);
     bad += check("  released", !ngated(t));
     hc.t[0].bass = HB_OFF;
+    key_down(K_C4);
+    key_down(K_INVERT); key_up(K_INVERT);
+    bad += check("INVERT on the display: the 1st inversion is named over its lowest note (C/E: E G C)",
+                 str_eq(hc.name, "C/E") && gate_note(t, 52) && gate_note(t, 55) && gate_note(t, 60) && !gate_note(t, 48));
+    key_down(K_INVERT); key_up(K_INVERT);
+    bad += check("  the 2nd: C/G", str_eq(hc.name, "C/G") && gate_note(t, 55));
+    key_down(K_INVERT); key_up(K_INVERT);
+    bad += check("  root position again: C", str_eq(hc.name, "C") && gate_note(t, 48));
+    key_up(K_C4);
+    hc.inv[K_C4] = 0;
     hc.t[0].vlead = 1;
     key_down(K_C4); key_up(K_C4);                      /* C E G, then G: root position would jump up */
     key_down(K_G4);

@@ -210,6 +210,35 @@ static int hc_preset_unpack(const uint8_t *b)
     hui.out_line = b[k++] & 1u;
     return 1;
 }
+/* The live state across power-off, as the HiChord keeps its sound, effects, mode, inversions and locks
+ * (key, scale, octave and tempo are Felucca's song and reset, as on the HiChord): packed like a preset
+ * into hc_live (settings_persist.c, PER6), saved with the settings 3 s after the last change (one flash
+ * erase per edit session, not per knob click), restored at boot (main.c) */
+static struct { uint32_t at_ms, poll_ms; uint8_t dirty; } hui_live;
+static void hui_live_restore(void)
+{
+    uint32_t i;
+    if (!hc_preset_unpack(hc_live))
+        return;
+    for (i = 0; i < NTRK; i++)
+        hc_play_set(&trk[i], hc.t[i].play);
+}
+static void hui_live_poll(void)
+{
+    uint8_t b[HC_PRESET_BYTES];
+    if ((uint32_t)(fm1_ms - hui_live.poll_ms) < 500u)
+        return;
+    hui_live.poll_ms = fm1_ms;
+    hc_preset_pack(b);
+    if (memcmp(b, hc_live, sizeof b)) {
+        memcpy(hc_live, b, sizeof b);
+        hui_live.at_ms = fm1_ms;
+        hui_live.dirty = 1;
+    } else if (hui_live.dirty && (uint32_t)(fm1_ms - hui_live.at_ms) >= 3000u) {
+        hui_live.dirty = 0;
+        settings_save();
+    }
+}
 static void hui_preset_scan(void)
 {
     uint32_t i;
@@ -562,6 +591,7 @@ static void hui_input(void)
     uint32_t sc = hui.screen, nrows = HU_ROWS[sc];
     fm1_input_note_edges();                              /* (the keys are the ISR's: nothing of the UI's) */
     fm6_poll();
+    hui_live_poll();
     kb_mask = perf_mask = 0;                             /* no layer takes the keys */
     song.grid = 0;
     song.seq_mode = 0;
@@ -1043,16 +1073,26 @@ static void hui_draw_home(void)
     const hc_trk_t *c = hui_c();
     uint32_t k = song.sel, held = fm1_in.notes | hc.latched, i, fxm = hui_fx_mask(c);
     const char *name = chord_last[k].n && chord_last[k].name[0] ? chord_last[k].name : hc.name[0] ? hc.name : "";
-    uint32_t deg = 7, lock = 0;
+    uint32_t deg = 7, lock = 0, invk = 0;
     uint32_t sig = str_hash(11u, name) + held * 31u + hc.dir * 7u + hc.cur_dir * 13u + fxm * 1013u + c->sound * 4099u +
                    hc.hold * 65537u + chord_last[k].gen * 3u;
-    for (i = 0; i < 27u; i++)                            /* the degree and lock of the key held last */
-        if (((held >> i) & 1u) && !key_black(i)) {
+    for (i = hc.nheld; i-- > 0;)                         /* the degree and lock of the chord key: pressed last
+                                                          * (BASS SLASH: the key held first is only the bass) */
+        if (!key_black(hc.order[i])) {
             int32_t o;
-            deg = hc_degree_of_key(TSEL, i, &o) % 7u;
-            lock |= hc.lock[i].on;
+            deg = hc_degree_of_key(TSEL, hc.order[i], &o) % 7u;
+            lock |= hc.lock[hc.order[i]].on;
+            invk = hc.inv[hc.order[i]];
+            break;
         }
-    sig += deg * 101u + lock * 7u;
+    if (deg == 7u)
+        for (i = 0; i < 27u; i++)                        /* (latched keys: HOLD) */
+            if (((held >> i) & 1u) && !key_black(i)) {
+                int32_t o;
+                deg = hc_degree_of_key(TSEL, i, &o) % 7u;
+                lock |= hc.lock[i].on;
+            }
+    sig += deg * 101u + lock * 7u + invk * 131u;
     for (i = 0; i < HCL_LAYERS; i++)
         sig += (hcl.l[i].state + 1u) * (3001u << i);
     sig += hcl.playing * 7u + (hcl.len ? hcl.pos * 24u / hcl.len : 0u) * 51u;
@@ -1100,6 +1140,10 @@ static void hui_draw_home(void)
             if (hc.dir != HD_NONE) {
                 str_cpy(b + str_len(b), "  ", sizeof b - str_len(b));
                 str_cpy(b + str_len(b), HC_DIR_NAME[hc.dir], sizeof b - str_len(b));
+            }
+            if (invk) {                                  /* the key's inversion (INVERT): 1ST / 2ND */
+                str_cpy(b + str_len(b), "  ", sizeof b - str_len(b));
+                str_cpy(b + str_len(b), invk == 1u ? "1ST INV" : "2ND INV", sizeof b - str_len(b));
             }
             cv_text_c(120, 86, &AF_M, b, T_MID, T_BG);
         } else if (!name[0]) {

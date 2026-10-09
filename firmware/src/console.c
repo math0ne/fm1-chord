@@ -129,6 +129,17 @@ static void con_hc(const char *p)
         con_puts("ok\r\n");
         return;
     }
+    {                                                    /* the live track's chord settings */
+        const hc_trk_t *c = hc_of(TSEL);
+        con_puts("track play "); fmt_int(b, c->play); con_puts(b);
+        con_puts(" bass "); con_puts(HB_NAME[c->bass % 3u]);
+        con_puts(" voices "); fmt_int(b, c->voices); con_puts(b);
+        con_puts(" vlead "); fmt_int(b, c->vlead); con_puts(b);
+        con_puts(" stereo "); fmt_int(b, c->stereo); con_puts(b);
+        con_puts(" sound "); fmt_int(b, c->sound); con_puts(b);
+        con_puts(" name "); con_puts(hc.name); con_puts(" held "); fmt_int(b, hc.nheld); con_puts(b);
+        con_puts("\r\n");
+    }
     con_puts("hcfx filt "); fmt_int(b, hcfx.filt); con_puts(b);
     con_puts(" hp "); fmt_int(b, hcfx.hp); con_puts(b);
     con_puts(" flg "); fmt_int(b, hcfx.flg); con_puts(b);

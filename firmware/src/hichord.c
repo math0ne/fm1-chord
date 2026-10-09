@@ -304,8 +304,8 @@ static int32_t hc_bass_of(const track_t *t, uint32_t k, int32_t root)
     if (c->bass == HB_OFF)
         return -1;
     b = root - 24;
-    if (c->bass == HB_SLASH && k != HC_NOKEY && hc.nheld && hc.order[0] != k && kb_chn[hc.order[0]])
-        b = (int32_t)kb_note[hc.order[0]] - 24;          /* the first key held: its root */
+    if (c->bass == HB_SLASH && k != HC_NOKEY && hc.nheld && hc.order[0] != k)
+        b = (int32_t)kb_note[hc.order[0]] - 24;          /* the first key held: its root (hc_slash_take) */
     while (b < 24)
         b += 12;
     return b;
@@ -344,7 +344,14 @@ static uint32_t hc_make(const track_t *t, uint32_t root, uint8_t *out, int32_t *
     }
     hs_voice(&hc.cur, r, q, bass, c->voices, inv);
     eng_hc_bass[ti % NPART] = (int16_t)bass;            /* the HICHORD engine: the bass slot's own wave */
-    hs_name(hc.name, tonic, r, q, bass);
+    {                                                    /* the name: an inversion with no bass voice is named over
+                                                          * its lowest note (C/E, C/G), as written; a bass voice is
+                                                          * the lowest and names itself (ROOT: none, SLASH: /bass) */
+        int32_t nb = bass;
+        if (bass < 0 && inv && hc.cur.n)
+            nb = hc.cur.note[0];
+        hs_name(hc.name, tonic, r, q, nb);
+    }
     hc.cur_dir = hc.dir;
     hc.cur_q = (uint8_t)q;
     hc.cur_root = r;
@@ -609,6 +616,22 @@ static void hc_gate(track_t *t, int on)
 }
 
 /* a chord key went down (key k, track t): the play mode decides what sounds now */
+/* BASS SLASH (the HiChord: "hold one Chord Button for the bass, press another for the chord. Screen shows
+ * Em/C"; its diagram of Am/C is C A C E: the bass, the chord on top). The key held first gives only its
+ * bass note: its own chord, and any earlier chord key's, stop when chord key k comes down (k is in
+ * hc.order already; the bass key stays there, held). In the modes where a key's chord sounds by itself. */
+static void hc_slash_take(track_t *t, uint32_t k)
+{
+    uint32_t i;
+    if (hc_of(t)->bass != HB_SLASH || hc.nheld < 2u || hc.order[0] == k)
+        return;
+    for (i = 0; i < hc.nheld; i++) {
+        uint32_t j = hc.order[i];
+        if (j != k && kb_chn[j] && &trk[kb_trk[j] % NTRK] == t)
+            key_off(j, t);
+    }
+}
+
 static void hc_key_on(uint32_t k, track_t *t)
 {
     const hc_trk_t *c = hc_of(t);
@@ -653,6 +676,7 @@ static void hc_key_on(uint32_t k, track_t *t)
     case HP_STRUM: {                                     /* the first note now, the rest in slot order, spaced */
         static const uint16_t GAP_MS[3] = {200, 80, 40};
         uint32_t j;
+        hc_slash_take(t, k);
         hc_chord_of_key(t, k, nn, &n);
         kb_chn[k] = 0;
         hc.strum[k].n = 0;
@@ -705,6 +729,7 @@ static void hc_key_on(uint32_t k, track_t *t)
                 hc_note_off(t, kb_chord[k][i]);
         break;
     default:
+        hc_slash_take(t, k);
         key_on(k, t);
         break;
     }
@@ -755,6 +780,18 @@ static void hc_key_off(uint32_t k, track_t *t)
         kb_chn[k] = 0;                                   /* (gated off already) */
     else
         key_off(k, t);
+    if (c->bass == HB_SLASH && hc.nheld && c->play != HP_ARP && c->play != HP_REPEAT &&
+        &trk[kb_trk[hc.order[0]] % NTRK] == t) {
+        uint32_t b = hc.order[0];
+        if (!kb_chn[b]) {                                /* the chord key let go, the bass key still held: its own
+                                                          * chord again (it is a chord button) */
+            hc.cur_key = (uint8_t)b;
+            key_on(b, t);
+            hc.cur_key = HC_NOKEY;
+        } else {
+            hc.dirty = 1;                                /* the bass key let go: the chord revoices over its root */
+        }
+    }
     if ((c->play == HP_ARP || c->play == HP_REPEAT) && !hc_any_held(t)) {
         hc.run[ti].chord_on = 0;
         hc_arp_notes_off(t);

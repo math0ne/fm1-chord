@@ -66,6 +66,16 @@ int main(int argc, char **argv)
     key_up(16);
     key_down(5); key_up(5);                              /* HOLD off */
     hframes(3);
+    hc.t[0].bass = HB_SLASH; hc_apply(&trk[0]);          /* BASS SLASH: C4 held (the bass), E4 pressed: Em/C */
+    key_down(7); hframes(2);
+    key_down(11); hframes(3);
+    ppm(argv[1], "home_slash");
+    key_up(11); key_up(7); hframes(2);
+    hc.t[0].bass = HB_OFF; hc_apply(&trk[0]);
+    key_down(7); hframes(2);
+    key_down(1); key_up(1); hframes(3);                  /* INVERT tapped while C is held: C/E, 1ST INV */
+    ppm(argv[1], "home_inverted");
+    key_up(7); hc.inv[7] = 0; hframes(2);
     hc.t[0].rev = HRV_HALL; hc.t[0].dly = HDL_1_8; hc.t[0].cho = HCH_WARM; hc.t[0].glide = HGL_SHORT;
     hc_apply(&trk[0]);
     hui.force = 1;
