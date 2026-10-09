@@ -342,7 +342,7 @@ static void con_params(void)
 static void con_exec(const char *p)
 {
     if (con_word(&p, "help") || con_word(&p, "?"))
-        con_puts("status  dbg  inp  crash  params  memr ADDR [LEN]  flr OFF [LEN]  uboot yes\r\n");
+        con_puts("status  dbg  inp  crash  params  memr ADDR [LEN]  flr OFF [LEN]  factory yes  uboot yes\r\n");
     else if (con_word(&p, "status"))
         con_status();
     else if (con_word(&p, "dbg"))
@@ -359,7 +359,14 @@ static void con_exec(const char *p)
     else if (con_word(&p, "flr"))
         con_flr(p);
 #endif
-    else if (con_word(&p, "uboot")) {
+    else if (con_word(&p, "factory")) {
+        if (con_word(&p, "yes")) {
+            con_puts("erasing settings, presets and projects; rebooting\r\n");
+            usb.factory_req = 1;                       /* main loop, after the reply went out */
+        } else {
+            con_puts("type 'factory yes' (keeps the uploaded samples)\r\n");
+        }
+    } else if (con_word(&p, "uboot")) {
         if (con_word(&p, "yes")) {
             con_puts("entering UBOOT\r\n");
             usb.uboot_req = 1;                         /* main loop: same path as the SysEx key */

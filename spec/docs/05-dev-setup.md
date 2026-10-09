@@ -24,6 +24,13 @@ The console is a USB serial device (COM6, 115200): `status` showed 28 % CPU at i
 batt_raw 602. Recovery without a dongle: the boot guard enters uboot after two failed boots, and
 OCT- + OCT+ held 5 s does the same; the installer then finishes the write.
 
+**Factory reset** (added after the first flash): Felucca has none, and the settings record
+(0xFC000, with the panel calibration and the P1..P4 presets), the 4 projects (0x97000..), the user
+preset banks (0xDC000..) and the FM6 bank survive reinstalls. `factory_reset()` in main.c erases
+both copies of every storage object (`st_wipe`, storage.c), clears the .noinit panel table and
+reboots. Entry: HOME + SAVE held at power-on (3 s countdown on screen, letting go cancels) or the
+console command `factory yes`. The uploaded samples (0xA0000..0xDBFFF) are left alone.
+
 ## 0a. Phase 0 status (done 2026-10-05, in WSL Ubuntu 24.04)
 
 Layout in WSL (canonical from now on; the Windows folder is a mirror):

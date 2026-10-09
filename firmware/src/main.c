@@ -94,6 +94,48 @@ static void fm1_fault(const fm1_crash_t *c)
     fm1_reboot();
 }
 
+/* fm1-chord: FACTORY RESET. Erases the saved settings, presets and projects (storage.c st_wipe), drops
+ * the panel calibration kept in .noinit, and reboots: the next boot starts from the defaults.
+ * Entered from the console (`factory yes`) or by holding HOME + SAVE at power-on for 3 s. */
+static void factory_reset(void)
+{
+    fm1_audio_stop();
+    lcd_fill(0, 0, 240, 240, T_BG);
+    draw_text_box(0, 110, 240, &AF_M, "ERASING", T_THEME, 1);
+#if FELUCCA_FLASH
+    st_wipe();
+#endif
+    panel.magic = 0;                             /* panel_init: the default table at the next boot */
+    usb_detach();
+    fm1_delay_ms(30);
+    bootguard.pending = 0;                       /* intentional reset: not a failed boot */
+    fm1_reboot();
+}
+
+/* HOME + SAVE held at power-on: a 3 s countdown, letting go boots normally */
+static void factory_reset_prompt(void)
+{
+    uint32_t both = (1u << panel.btn[B_HOME]) | (1u << panel.btn[B_SAVE]), t0 = fm1_ms, last = 0;
+    lcd_fill(0, 0, 240, 240, T_BG);
+    draw_text_box(0, 70, 240, &AF_M, "FACTORY RESET", T_THEME, 1);
+    draw_text_box(0, 100, 240, &AF_S, "SETTINGS, PRESETS, PROJECTS", T_MID, 1);
+    draw_text_box(0, 118, 240, &AF_S, "KEEP HOLDING HOME + SAVE", T_MID, 1);
+    while ((fm1_in.buttons & both) == both) {
+        uint32_t held = fm1_ms - t0, left = held >= 3000u ? 0u : (3000u - held + 999u) / 1000u;
+        char d[2] = {(char)('0' + left), 0};
+        fm1_wdt_feed();
+        if (left == 0)
+            factory_reset();
+        if (left != last) {
+            last = left;
+            draw_text_box(0, 150, 240, &AF_M, d, T_ACCENT, 1);
+        }
+        fm1_delay_ms(10);
+    }
+    draw_text_box(0, 150, 240, &AF_S, "CANCELLED", T_MID, 1);
+    fm1_delay_ms(500);
+}
+
 /* power-on: the parts with their default sounds (TRK_DEF); the sequencers empty */
 static void felucca_init(void)
 {
@@ -166,6 +208,11 @@ static void fm1_main(void)
         panel_setup();                        /* OCT- + OCT+ held at power-on */
         settings_save();
     }
+    {
+        uint32_t both = (1u << panel.btn[B_HOME]) | (1u << panel.btn[B_SAVE]);
+        if ((fm1_in.buttons & both) == both)
+            factory_reset_prompt();           /* HOME + SAVE held at power-on (fm1-chord) */
+    }
     fm1_delay_ms(400);
     lcd_fill(0, 0, 240, 240, T_BG);
 
@@ -231,6 +278,11 @@ static void fm1_main(void)
             ui.force = 1;
         }
 #endif
+        if (usb.factory_req) {                          /* console `factory yes` (fm1-chord) */
+            usb.factory_req = 0;
+            fm1_delay_ms(100);                          /* the console reply first */
+            factory_reset();
+        }
         if (usb.uboot_req) {                            /* SysEx F0 22 24 35 7D F7 from the host */
             fm1_audio_stop();
             lcd_fill(0, 0, 240, 240, T_BG);

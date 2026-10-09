@@ -32,5 +32,7 @@ USB-MIDI with `tools/fm1_install.py`; 28 % CPU at idle on the console). It also 
 [FM-1 emulator](https://github.com/simonjohansson/fm1-emulator) with a patch set on its released
 build that also adds the knobs and WAV recording of the emulated audio: `tools/emulator/run.sh`
 fetches, patches, builds and launches it (WSL works; on Windows build the same source natively).
+Factory reset: hold HOME + SAVE while powering on (3 s countdown), or `factory yes` on the USB
+console; it erases the settings, presets and projects and keeps uploaded samples.
 Spec and notes in [spec/docs](spec/docs). Build and flash: [spec/docs/05-dev-setup.md](spec/docs/05-dev-setup.md).
 GPL-3.0, as Felucca.

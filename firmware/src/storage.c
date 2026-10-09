@@ -118,6 +118,20 @@ static int st_load(uint32_t obj, void *dst, uint32_t max)
     return (int)h.len;
 }
 
+/* fm1-chord factory reset: both copies of every object erased (the settings with the panel
+ * calibration and the P1..P4 presets, the 4 projects, the user preset banks, the FM6 bank). The
+ * uploaded samples live outside the objects and stay. 0, or -1 if any sector would not erase. */
+static int st_wipe(void)
+{
+    uint32_t obj, copy;
+    int rc = 0;
+    for (obj = 0; obj < OBJ_COUNT; obj++)
+        for (copy = 0; copy < 2u; copy++)
+            if (st_erase(st_sector(obj, copy)) != 0)
+                rc = -1;
+    return rc;
+}
+
 static int st_save(uint32_t obj, const void *src, uint32_t len)
 {
     uint32_t seq, base, off;
