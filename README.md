@@ -5,7 +5,7 @@ Built on [Felucca](https://github.com/hugelton/Felucca). Clean-room: nothing fro
 
 **White keys play chords.** Each white key is a scale degree in the current key and scale, so every
 chord fits: C4 is I, D4 is ii, and so on, across two octaves. The screen names the chord and shows
-its notes on a piano.
+its notes on a piano; at rest it shows what every key does.
 
 **Black keys change them.** The eight black keys of the middle octaves are the HiChord's joystick
 directions (7ths, 9ths, sus, dim, aug, borrowed chords, in four tables); F#3 cycles the inversion
@@ -33,7 +33,7 @@ settings come back after power-off. HOME held gives you Felucca's full synth und
 | ![effects](screenshots/home_fx.png) | ![sound list](screenshots/pick_sound.png) | ![envelopes](screenshots/pick_env.png) |
 | ![key menu](screenshots/menu_key.png) | ![sound menu](screenshots/menu_sound_amount.png) | ![mode menu](screenshots/menu_mode.png) |
 | ![looper](screenshots/menu_looper.png) | ![sequencer](screenshots/mode_sequencer.png) | ![drum loop recording](screenshots/mode_drumloop_rec.png) |
-| ![drums](screenshots/mode_drum.png) | ![mixer](screenshots/mode_mixer.png) | ![chord hiro](screenshots/mode_hiro.png) |
+| ![drums](screenshots/mode_drum.png) | ![at rest: the key legend](screenshots/home_idle.png) | ![chord hiro](screenshots/mode_hiro.png) |
 
 Status: running on an FM-1 (installed over USB-MIDI with `tools/fm1_install.py`, 28 % CPU at idle)
 and tested on the host simulator. It also runs in the
