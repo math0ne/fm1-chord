@@ -8,7 +8,7 @@
  *   SELECT    the cursor of a menu; on HOME the key
  *   OCT- / +  the value of the row (a menu); the octave (HOME); both: RANDOMIZE (ALL on KEY, the sound on
  *             SOUND, the pattern on MODE)
- *   ALGORITHM the play mode, PRESETS the sound, KNOB 1 the FILTER wheel, KNOB 2 ATTACK, KNOB 3 RELEASE,
+ *   ALGORITHM the play mode, PRESETS the sound, KNOB 1 the FILTER wheel, KNOB 2 RESONANCE, KNOB 3 ATTACK, KNOB 4 RELEASE,
  *             KNOB 4 the tempo: on every screen
  *   ENV / LFO the envelope preset / the vibrato; ARP: ARP mode and back; EDIT tapped three times: tap tempo
  * Included after Felucca's ui*.c (it uses their drawing, sounds and projects); ui_input / ui_draw / ui_leds
@@ -56,7 +56,7 @@ static const char *const HP_SHORT[HP_COUNT] = {"PLAY", "STRUM", "LEAD", "DRONE",
 enum { HU_HOME, HU_KEY, HU_SOUND, HU_MODE, HU_PRESET, HU_LOOP, HU_PICK, HU_N };   /* HU_PICK: a list (hui_pick_*) */
 enum { RL_L1, RL_L2, RL_L3, RL_L4, RL_BARS, RL_METRO, RL_CLEAR, RL_N };   /* (RL_L1 + HCL_LAYERS - 1 = RL_L4) */
 enum { RK_KEY, RK_OCT, RK_SCALE, RK_LAYOUT, RK_JOY, RK_BASS, RK_VOICES, RK_VLEAD, RK_RANDOM, RK_N };
-enum { RS_SOUND, RS_ENV, RS_ATK, RS_REL, RS_FILT, RS_CUT, RS_HP, RS_REV, RS_DLY, RS_CHO, RS_FLG, RS_TREM, RS_LFO,
+enum { RS_SOUND, RS_ENV, RS_ATK, RS_REL, RS_FILT, RS_CUT, RS_RES, RS_HP, RS_REV, RS_DLY, RS_CHO, RS_FLG, RS_TREM, RS_LFO,
        RS_GLIDE, RS_DRIVE, RS_TAPE, RS_STEREO, RS_SPK, RS_OUT, RS_MIDIIN, RS_RANDOM, RS_N };
 enum { RM_MODE, RM_BPM, RM_STRUM, RM_APAT, RM_ARATE, RM_ALAYER, RM_SEQLEN, RM_KIT, RM_DLSTYLE, RM_DLVAR, RM_SONG, RM_DIFF,
        RM_SPEED, RM_LEVEL, RM_RANDOM, RM_N };
@@ -67,7 +67,7 @@ static const uint8_t HU_ROWS[HU_N] = {0, RK_N, RS_N, RM_N, 4, RL_N, 0};
 static const char *const RL_LABEL[RL_N] = {"LAYER 1", "LAYER 2", "LAYER 3", "LAYER 4", "BARS", "METRONOME", "CLEAR ALL"};
 static const char *const RK_LABEL[RK_N] = {"KEY", "OCTAVE", "SCALE", "LAYOUT", "JOYSTICK", "BASS", "VOICES", "VOICE LEAD",
                                            "RANDOMIZE ALL"};
-static const char *const RS_LABEL[RS_N] = {"SOUND", "ENVELOPE", "ATTACK", "RELEASE", "FILTER WHEEL", "CUTOFF", "HI-PASS",
+static const char *const RS_LABEL[RS_N] = {"SOUND", "ENVELOPE", "ATTACK", "RELEASE", "FILTER WHEEL", "CUTOFF", "RESONANCE", "HI-PASS",
                                            "REVERB", "DELAY", "CHORUS", "FLANGER", "TREMOLO", "LFO", "GLIDE", "DRIVE", "TAPE",
                                            "STEREO", "SPEAKER", "OUT LEVEL", "MIDI IN", "RANDOMIZE SOUND"};
 static const char *const RM_LABEL[RM_N] = {"MODE", "TEMPO", "STRUM SPEED", "ARP PATTERN", "ARP RATE", "ARP LAYER",
@@ -125,6 +125,17 @@ static uint32_t hui_rand(uint32_t n)
 /* the live track's HiChord settings */
 static hc_trk_t *hui_c(void) { return &hc.t[song.sel]; }
 static void hui_apply(void) { hc_apply(TSEL); }
+static int hui_row_value(uint32_t sc, uint32_t row, char *b);   /* (below) */
+/* a knob turned: its name and value in the header bar for a moment ("ATTACK 790ms") */
+static void hui_say_value(const char *label, uint32_t row)
+{
+    char v[20];
+    hui_row_value(HU_SOUND, row, v);
+    str_cpy(hui.msg, label, sizeof hui.msg);
+    str_cpy(hui.msg + str_len(hui.msg), " ", sizeof hui.msg - str_len(hui.msg));
+    str_cpy(hui.msg + str_len(hui.msg), v, sizeof hui.msg - str_len(hui.msg));
+    hui.msg_t = 70;
+}
 
 /* the effect rows with an amount (KNOB 4): REVERB, DELAY, CHORUS (their sends), FLANGER (its wet),
  * TREMOLO (its depth). The amount in effect: the one set, else the type's own */
@@ -215,7 +226,7 @@ static void hui_track_init(track_t *t)
 /* a preset's own state packed into HC_PRESET_BYTES (settings_persist.c hc_presets): magic, the tracks' settings,
  * the key inversions and locks. Saving: the project slot (ui.c project_save: sounds, key, tempo, the Felucca
  * parameters) and this; loading: both, then hc_apply */
-#define HCP_MAGIC 0x48435032u                           /* "HCP2": hc_trk_t grew the effect amounts */
+#define HCP_MAGIC 0x48435033u                           /* "HCP3": hc_trk_t grew res */
 static void hc_preset_pack(uint8_t *b)
 {
     uint32_t i, k = 4;
@@ -404,6 +415,7 @@ static int hui_row_value(uint32_t screen, uint32_t row, char *b)
             str_cpy(b + str_len(b), u, 16 - str_len(b));
             break;
         }
+        case RS_RES: fmt_int(b, c->res); break;
         case RS_HP: str_cpy(b, c->hp ? "ON" : "OFF", 16); break;
         case RS_REV: hui_fx_value(b, HRV_NAME[c->rev % HRV_COUNT], c->rev, hui_fx_amount(c, RS_REV)); break;
         case RS_DLY: hui_fx_value(b, HDL_NAME[c->dly % HDL_COUNT], c->dly, hui_fx_amount(c, RS_DLY)); break;
@@ -496,6 +508,7 @@ static void hui_row_change(uint32_t screen, uint32_t row, int32_t d)
         case RS_REL: c->rel = (uint8_t)clamp((c->rel ? c->rel : TSEL->p[P_REL]) + d * 4, 1, 127); break;
         case RS_FILT: c->filt = (uint8_t)!c->filt; break;
         case RS_CUT: c->cutoff = (uint8_t)clamp(c->cutoff + d * 4, 0, 127); c->filt = 1; break;
+        case RS_RES: c->res = (uint8_t)clamp(c->res + d * 4, 0, 127); c->filt = 1; break;
         case RS_HP: c->hp = (uint8_t)!c->hp; break;
         case RS_REV: c->rev = (uint8_t)hui_cycle(c->rev, d, HRV_COUNT); break;
         case RS_DLY: c->dly = (uint8_t)hui_cycle(c->dly, d, HDL_COUNT); break;
@@ -777,25 +790,32 @@ static void hui_input(void)
         hc_sound_load(TSEL, hui_cycle(c->sound, s, HC_NSOUNDS));
         hui_pick_open(PK_SOUND, 0);
     }
-    if ((s = panel_enc(EN_K1)) != 0) {
+    if ((s = panel_enc(EN_K1)) != 0) {                   /* KNOB 1: the FILTER wheel */
         c->cutoff = (uint8_t)clamp(c->cutoff + s * 3, 0, 127);
         c->filt = 1;
         hui_apply();
+        hui_say_value("FILTER", RS_CUT);
     }
-    if ((s = panel_enc(EN_K2)) != 0) {
+    if ((s = panel_enc(EN_K2)) != 0) {                   /* KNOB 2: RESONANCE */
+        c->res = (uint8_t)clamp(c->res + s * 3, 0, 127);
+        c->filt = 1;
+        hui_apply();
+        hui_say_value("RESONANCE", RS_RES);
+    }
+    if ((s = panel_enc(EN_K3)) != 0) {                   /* KNOB 3: ATTACK */
         c->atk = (uint8_t)clamp((c->atk ? c->atk : TSEL->p[P_ATK]) + s * 2, 1, 127);
         hui_apply();
+        hui_say_value("ATTACK", RS_ATK);
     }
-    if ((s = panel_enc(EN_K3)) != 0) {
-        c->rel = (uint8_t)clamp((c->rel ? c->rel : TSEL->p[P_REL]) + s * 2, 1, 127);
-        hui_apply();
-    }
-    if ((s = panel_enc(EN_K4)) != 0) {
-        if (sc == HU_SOUND && hui_fx_row(hui.sel[sc]))   /* an effect row: its amount */
+    if ((s = panel_enc(EN_K4)) != 0) {                   /* KNOB 4: RELEASE (an effect row of the SOUND menu: its amount) */
+        if (sc == HU_SOUND && hui_fx_row(hui.sel[sc])) {
             hui_fx_turn(c, hui.sel[sc], s);
-        else
-            song.g[G_BPM] = (int16_t)clamp(song.g[G_BPM] + s, GP[G_BPM].min, GP[G_BPM].max);
-        hui_apply();
+            hui_apply();
+        } else {
+            c->rel = (uint8_t)clamp((c->rel ? c->rel : TSEL->p[P_REL]) + s * 2, 1, 127);
+            hui_apply();
+            hui_say_value("RELEASE", RS_REL);
+        }
     }
     {   /* the looper: REC cycles the layer (held: clears it), PLAY pauses / resumes, SEQ shows the LOOPER screen */
         uint32_t rec = btn_hold(&hui.rec_t0, B_REC, now, 1);

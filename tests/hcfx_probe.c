@@ -64,7 +64,11 @@ int main(int argc, char **argv)
     segment("filter fixed 64", 1500, 2500, w, 0, 0, 64);
     hc.t[0].cutoff = 20; hc_apply(&trk[0]);
     segment("filter fixed 20", 2500, 3500, w, 0, 0, 20);
-    segment("filter sweep", 3500, 4500, w, 1, 0, -1);
+    hc.t[0].cutoff = 40; hc.t[0].res = 0; hc_apply(&trk[0]);
+    segment("filter 40, res 0", 3500, 4000, w, 0, 0, 40);
+    hc.t[0].res = 110; hc_apply(&trk[0]);
+    segment("filter 40, res 110", 4000, 4500, w, 0, 0, 40);
+    hc.t[0].res = 0; hc.t[0].cutoff = 127; hc_apply(&trk[0]);
     hc.t[0].filt = 0; hc.t[0].cutoff = 127; hc.t[0].hp = 1; hc_apply(&trk[0]);
     segment("hi-pass", 4500, 5500, w, 0, 1, 127);
     hc.t[0].hp = 0; hc_apply(&trk[0]);

@@ -115,6 +115,9 @@ static int test_sound_menu(void)
     turn(EN_SELECT, 1); press(B_OCTDN);
     bad += check("CUTOFF: down by 4", hc.t[0].cutoff == 123u && hcfx.cutoff == 123u);
     turn(EN_SELECT, 1); press(B_OCTUP);
+    bad += check("RESONANCE: up by 4, the master filter follows", hc.t[0].res == 4u && hcfx.res == 4u && val_is(HU_SOUND, RS_RES, "4"));
+    press(B_OCTDN);
+    turn(EN_SELECT, 1); press(B_OCTUP);
     bad += check("HI-PASS: ON", hcfx.hp == 1u);
     turn(EN_SELECT, 1); press(B_OCTUP); press(B_OCTUP);
     bad += check("REVERB: HALL -> the send and the bus (ROOM model, size 110)", hc.t[0].rev == HRV_HALL && t->p[P_REV] == 65 &&
@@ -186,11 +189,12 @@ static int test_mode_menu_knobs(void)
     turn(EN_K1, -5);
     bad += check("KNOB 1: the FILTER wheel on, the cutoff down", hc.t[0].filt == 1u && hc.t[0].cutoff == 112u);
     turn(EN_K2, 3);
-    bad += check("KNOB 2: the attack fine-tuned", hc.t[0].atk != 0u);
+    bad += check("KNOB 2: the resonance (9), said in the header", hc.t[0].res == 9u && hcfx.res == 9u && msg_is2("RESONANCE 9"));
     turn(EN_K3, -3);
-    bad += check("KNOB 3: the release fine-tuned", hc.t[0].rel != 0u);
+    bad += check("KNOB 3: the attack fine-tuned, said", hc.t[0].atk != 0u && hui.msg_t && !memcmp(hui.msg, "ATTACK ", 7));
     turn(EN_K4, 5);
-    bad += check("KNOB 4: the tempo", song.g[G_BPM] == 127);
+    bad += check("KNOB 4: the release fine-tuned, said", hc.t[0].rel != 0u && !memcmp(hui.msg, "RELEASE ", 8));
+    hc.t[0].res = 0; hc_apply(t);
     press(B_OCTUP);
     bad += check("OCT+ on HOME: the octave", song.octave == 1);
     press(B_OCTDN); press(B_OCTDN); press(B_OCTDN);
@@ -634,9 +638,9 @@ static int test_fx_amount(void)
     bad += check("FLANGER row: KNOB 4 is the wet amount (64 + 8), hcfx follows", c->flg_amt == 72u && hcfx.flg_amt == 72u);
     hui.sel[HU_SOUND] = RS_SOUND;
     {
-        int32_t bpm = song.g[G_BPM];
+        uint32_t rel = c->rel;
         turn(EN_K4, 1);
-        bad += check("any other row: KNOB 4 is the tempo", song.g[G_BPM] == bpm + 1);
+        bad += check("any other row: KNOB 4 is the release", c->rel != rel);
     }
     c->rev = 0; c->rev_amt = 0; c->trem = 0; c->trem_amt = 0; c->flg = 0; c->flg_amt = 0; hc_apply(t);
     hui_open(HU_HOME);

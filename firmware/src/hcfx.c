@@ -17,6 +17,7 @@ static struct {
     int32_t lz[4], hz[4];                /* filter states: L ic1 ic2, R ic1 ic2 */
     int16_t lk[3], hk[3];                /* coefficients */
     uint8_t lc;                          /* the cutoff index the coefficients are for */
+    uint8_t res, lr;                     /* RESONANCE 0..127 (KNOB 2), and the one the coefficients are for */
     int16_t fl_buf[2][512];              /* the flanger's delay (11.6 ms; Q15 samples) */
     uint32_t fl_w, fl_ph;                /* write index, LFO phase (Q32) */
     int32_t fl_fb[2];                    /* the feedback sample per channel */
@@ -38,6 +39,20 @@ static void hcfx_coef(void)
     hcfx.lk[0] = PF_SVF[i][0];
     hcfx.lk[1] = PF_SVF[i][1];
     hcfx.lk[2] = PF_SVF[i][2];
+    if (hcfx.res) {                                      /* RESONANCE: the damping k from the table's 1 down to 0.1.
+                                                          * The table is Simper's SVF at k = 1 (a1 = 1 / (1 + g (g + k)),
+                                                          * a2 = g a1, a3 = g a2): g comes back from a2 / a1 */
+        int64_t a1 = PF_SVF[i][0], a2 = PF_SVF[i][1];
+        int64_t g = a1 ? (a2 << 14) / a1 : 0;            /* Q14 */
+        int64_t k = 16384 - (int64_t)hcfx.res * 14746 / 127;   /* Q14: 1.0 - 0.9 res */
+        int64_t den = 16384 + ((g * (g + k)) >> 14);     /* Q14: 1 + g (g + k) */
+        a1 = den > 0 ? ((int64_t)1 << 28) / den : 16384;
+        a2 = (g * a1) >> 14;
+        hcfx.lk[0] = (int16_t)a1;
+        hcfx.lk[1] = (int16_t)a2;
+        hcfx.lk[2] = (int16_t)((g * a2) >> 14);
+    }
+    hcfx.lr = hcfx.res;
     hcfx.hk[0] = PF_SVF[16][0];                          /* ~150 Hz */
     hcfx.hk[1] = PF_SVF[16][1];
     hcfx.hk[2] = PF_SVF[16][2];
@@ -91,7 +106,7 @@ static inline void hc_master(int32_t *l, int32_t *r)
         *r = (*r * 10362) >> 15;
     }
     if (hcfx.filt && hcfx.cutoff < 126u) {               /* the FILTER wheel: a low-pass at the wheel */
-        if (hcfx.lc != (hcfx.cutoff >> 1))
+        if (hcfx.lc != (hcfx.cutoff >> 1) || hcfx.lr != hcfx.res)
             hcfx_coef();
         *l = hc_svf(clamp(*l, -131071, 131071), &hcfx.lz[0], hcfx.lk, 0);
         *r = hc_svf(clamp(*r, -131071, 131071), &hcfx.lz[2], hcfx.lk, 0);

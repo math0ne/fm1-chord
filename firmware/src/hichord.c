@@ -80,6 +80,7 @@ typedef struct {                 /* a track's HiChord settings (a preset stores 
     uint8_t rev, dly, cho, flg, trem, lfo, glide, drive, tape;   /* the effects */
     uint8_t stereo, filt, hp;    /* STEREO, the filter wheel, HI-PASS: on / off */
     uint8_t cutoff;              /* the filter wheel: 0..127 */
+    uint8_t res;                 /* RESONANCE 0..127 (KNOB 2; the HiChord: its app's CC 30) */
     uint8_t atk, rel;            /* ATTACK / RELEASE fine-tuned (Felucca values), 0 = the envelope preset's */
     uint8_t mode;                /* HM_*: the modifier table (JOYSTICK) */
     uint8_t bass;                /* HB_* */
@@ -267,6 +268,7 @@ static void hc_apply(track_t *t)
         hcfx.flg_amt = c->flg_amt ? c->flg_amt : 64;
         hcfx.tape = c->tape;
         hcfx.cutoff = c->cutoff;
+        hcfx.res = c->res;
     }
 }
 

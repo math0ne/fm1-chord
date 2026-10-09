@@ -132,6 +132,14 @@ The key strip shown when nothing sounds now says what each key does: the degree'
 white key (over its colour bar), I, L and H on the INVERT, LOCK and HOLD keys, and a dot placed in
 the joystick direction on each of the eight direction keys.
 
+## KNOB 1-4: filter, resonance, attack, release (owner's choice)
+
+KNOB 4 was the tempo (the MODE menu's TEMPO row and tap tempo remain). Now the four knobs are the
+filter wheel, RESONANCE (new: the master SVF's damping k from the table's 1 down to 0.1, computed
+from the k = 1 coefficient table, `hcfx_coef`; also a SOUND menu row; the HiChord has it only as
+its app's CC 30), attack and release, and each turn shows its name and value in the header bar
+("ATTACK 790ms"). KNOB 4 on an effect row still sets the amount. Preset format HCP3.
+
 ## Numbers
 
 | | |

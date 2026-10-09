@@ -20,8 +20,9 @@ Bluetooth are missing.
 
 **Controls.** Three menus on three buttons, colour-coded like the HiChord's: **SCL** key (grey),
 **FX** sound (yellow), **EDIT** mode (red), **SAVE** presets. The PRESETS and ALGORITHM knobs pick the
-sound and the mode from a list, ENV and LFO open theirs, KNOB 1 is the filter wheel, KNOB 2 and 3
-attack and release, KNOB 4 the tempo, or an effect's amount on its row in the sound menu. Chords over
+sound and the mode from a list, ENV and LFO open theirs, KNOB 1 to 4 are filter, resonance, attack
+and release with the value shown as you turn (KNOB 4 sets an effect's amount on its row in the sound
+menu); tempo is on the mode menu and EDIT tapped three times. Chords over
 drums: record the drum loop into a looper layer; the drum screens show the loop to time it. Your
 settings come back after power-off. HOME held gives you Felucca's full synth underneath.
 
