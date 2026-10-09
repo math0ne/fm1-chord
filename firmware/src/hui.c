@@ -1260,8 +1260,9 @@ static void hui_draw_piano(uint32_t deg)
     uint32_t i, lo = 127, hi = 0, start, root = (uint32_t)(hc.cur.root + 1200) % 12u, held = fm1_in.notes | hc.latched;
     uint8_t on[128];                                     /* 1 a note of the chord, 2 a strumplate note */
     memset(on, 0, sizeof on);
-    if (hui_c()->play == HP_LEAD) {                      /* LEAD: the root alone sounds */
-        on[clamp(hc.cur_root, 0, 127)] = 1;
+    if (hui_c()->play == HP_LEAD) {                      /* LEAD: the one note that sounds */
+        if (hc.lead_note)
+            on[hc.lead_note - 1u] = 1;
     } else {
         for (i = 0; i < hc.cur.n; i++)
             if (hc.cur.note[i] <= 127u)
@@ -1280,6 +1281,12 @@ static void hui_draw_piano(uint32_t deg)
     ccol = hc.nheld || hc.latched ? col : T_MID;         /* the chord in colour while a chord key sounds, else dim:
                                                           * the plate strums the chord last played */
     start = lo - lo % 12u;
+    if (hui_c()->play == HP_LEAD) {                      /* LEAD: the window stands on the first key's octave, so a
+                                                          * note climbing the keys climbs the piano (no re-basing) */
+        uint32_t d, f = (uint32_t)hc_lead_note(TSEL, 0u, &d);
+        if (f - f % 12u <= lo)
+            start = f - f % 12u;
+    }
     if (hi >= start + 48u) {
         start = hi - 47u;
         start += (12u - start % 12u) % 12u;
@@ -1315,9 +1322,9 @@ static void hui_draw_home(void)
     const char *name = chord_last[k].n && chord_last[k].name[0] ? chord_last[k].name : hc.name[0] ? hc.name : "";
     uint32_t deg = 7, lock = 0, invk = 0, sig;
     char lead[8];
-    if (c->play == HP_LEAD) {                            /* LEAD: the one note that sounds (the chord's root), named */
-        if (hc.cur.n) {
-            uint32_t r = (uint32_t)clamp(hc.cur_root, 0, 127);
+    if (c->play == HP_LEAD) {                            /* LEAD: the note that sounds, named (C4) */
+        if (hc.lead_note) {
+            uint32_t r = hc.lead_note - 1u;
             str_cpy(lead, HC_NOTE_NAME[r % 12u], sizeof lead);
             fmt_int(lead + str_len(lead), (int32_t)(r / 12u) - 1);
             name = lead;
@@ -1343,7 +1350,11 @@ static void hui_draw_home(void)
                 deg = hc_degree_of_key(TSEL, i, &o) % 7u;
                 lock |= hc.lock[i].on;
             }
-    sig += deg * 101u + lock * 7u + invk * 131u + hc.cur.n * 131u + (uint32_t)(hc.cur.root + 1200) * 3u;
+    if (c->play == HP_LEAD) {                            /* LEAD: the degree of the note (a seven-note scale) */
+        deg = hc.lead_note && hc.lead_deg < 7u ? hc.lead_deg : 7u;
+        lock = invk = 0;
+    }
+    sig += deg * 101u + lock * 7u + invk * 131u + hc.cur.n * 131u + (uint32_t)(hc.cur.root + 1200) * 3u + hc.lead_note * 5u;
     for (i = 0; i < hc.cur.n && i < HS_N; i++)           /* the piano: the chord's notes */
         sig += (uint32_t)hc.cur.note[i] * (7u + i * 3u);
     for (i = 0; i < HCL_LAYERS; i++)
@@ -1412,7 +1423,7 @@ static void hui_draw_home(void)
     cv_blit(0, HU_HEAD);
     /* the keyboard: 16 white keys, 11 black, the held ones in their degree's colour, the directions dim */
     cv_begin(240, 92, T_BG);
-    if (held && hc.cur.n) {                              /* a chord sounds: its notes on a piano */
+    if (held && (hc.cur.n || (c->play == HP_LEAD && hc.lead_note))) {   /* a chord (LEAD: a note) sounds: the piano */
         hui_draw_piano(deg);
     } else {
         int32_t ww = 14, x0 = 4;
@@ -1421,7 +1432,13 @@ static void hui_draw_home(void)
             if (!key_black(i)) {
                 int32_t o, j = hc_plate_of_key(TSEL, i), x = x0 + (int32_t)p * (ww + 1);
                 uint32_t d = hc_degree_of_key(TSEL, i, &o) % 7u;
-                char dn[2] = {(char)('1' + d), 0};
+                char dn[4] = {(char)('1' + d), 0};
+                if (c->play == HP_LEAD) {                /* LEAD: every key its degree of the scale, 1 up */
+                    uint32_t ld;
+                    hc_lead_note(TSEL, i, &ld);
+                    fmt_int(dn, (int32_t)ld + 1);
+                    d = ld % 7u;
+                }
                 if (j >= 0) {                            /* a strumplate key: a bar as high as its note */
                     int32_t h = 4 + j * 2;
                     cv_rrect(x, 2, ww, 66, 2, on ? HC_INK : T_SURF, T_BG);

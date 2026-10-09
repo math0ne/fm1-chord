@@ -6,8 +6,9 @@ Built on [Felucca](https://github.com/hugelton/Felucca). Clean-room: nothing fro
 **White keys play chords, then strum them.** The seven white keys at the left are the scale degrees
 in the current key and scale, so every chord fits: the first is I, the next ii, up to vii. The nine
 white keys to their right are a strumplate, as on an Omnichord: each plays one note of the chord
-last played, rising from key to key, so a swipe across them strums it. The screen names the chord
-and shows its notes on a piano; at rest it shows what every key does.
+last played, rising from key to key, so a swipe across them strums it. In LEAD every white key is
+a note of the scale instead, up from the tonic. The screen names the chord (or the note) and shows
+it on a piano; at rest it shows what every key does.
 
 **Black keys change them.** The eight black keys of the middle octaves are the HiChord's joystick
 directions (7ths, 9ths, sus, dim, aug, borrowed chords, in four tables); F#3 cycles the inversion

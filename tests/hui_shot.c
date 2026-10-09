@@ -62,6 +62,9 @@ int main(int argc, char **argv)
     key_down(2); hframes(3);
     ppm(argv[1], "home_lead");
     key_up(2); hframes(2);
+    key_down(23); hframes(3);                            /* the fourteenth key: B5, up the same piano */
+    ppm(argv[1], "home_lead_hi");
+    key_up(23); hframes(2);
     hui_mode_set(&trk[0], HP_PLAY); hframes(2);
     key_down(9); key_down(3);                           /* A4 (Am) with LOCK's key: LOCK needs a direction; HOLD on A#3 */
     key_up(3);

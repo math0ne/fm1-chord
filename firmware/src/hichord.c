@@ -5,7 +5,8 @@
  * layout: the key's own letter is the root, snapped onto the scale). In the chord modes the nine white
  * keys to their right, F4..G5, are the strumplate (hc_plate_on: one note of the chord last played each,
  * rising), as the Omnichord has its chord buttons left and its strumplate right; in the other modes they
- * are the degrees again, an octave up. The black keys are the eight
+ * are the degrees again, an octave up. LEAD: all sixteen white keys walk the scale from the tonic at C4,
+ * one note each (hc_lead_note), no chords, no plate. The black keys are the eight
  * modifier directions and three gestures:
  *   C#4 up, D#4 up-right, F#4 right, G#4 down-right, A#4 down, C#5 down-left, D#5 left, F#5 up-left
  *   F#3 INVERT (with chord keys held: their inversion cycles), G#3 LOCK (with a chord key and a
@@ -121,6 +122,8 @@ static struct {
     uint8_t cur_dir, cur_q;      /* what the last chord_make applied: the direction, the quality (the display) */
     int32_t cur_root;
     hchord_t cur;                /* the chord last built (its slots: STRUM order, the ARP's roles) */
+    uint8_t lead_note;           /* LEAD: the note last played + 1 (0 none): the display */
+    uint8_t lead_deg;            /* LEAD: its degree in the scale */
     /* the play modes */
     uint32_t clock;              /* samples (hc_tick) */
     struct { uint8_t n, i; uint8_t note[HS_N]; uint32_t due; } strum[27];   /* a key's notes still to roll */
@@ -300,6 +303,20 @@ static uint32_t hc_degree_of_key(const track_t *t, uint32_t k, int32_t *oct)
     return p % 7u;
 }
 
+/* LEAD (fm1-chord): the sixteen white keys walk the scale from the tonic at C4, one note each; *dp the
+ * key's degree in the scale (0 = the tonic) */
+static int32_t hc_lead_note(const track_t *t, uint32_t k, uint32_t *dp)
+{
+    uint32_t mask = hc_mask(t), p = key_place(k), n = 0, i, d;
+    uint8_t iv[12];
+    for (i = 0; i < 12u; i++)
+        if ((mask >> i) & 1u)
+            iv[n++] = (uint8_t)i;
+    d = p % n;
+    *dp = d;
+    return clamp(HC_BASE + 12 + t->p[P_ROOT] + iv[d] + 12 * ((int32_t)(p / n) + song.octave) + t->p[P_TRANS], 0, 127);
+}
+
 /* the root note of key k's chord as it is now (kb_note: step entry, LEDs; chord_make builds the rest) */
 static uint32_t hc_root_note(const track_t *t, uint32_t k)
 {
@@ -447,7 +464,7 @@ static uint8_t hc_plate[27];                             /* per key: the plate n
 static int32_t hc_plate_of_key(const track_t *t, uint32_t k)
 {
     uint32_t p;
-    if (key_black(k) || hc_of(t)->play > HP_REPEAT)
+    if (key_black(k) || hc_of(t)->play > HP_REPEAT || hc_of(t)->play == HP_LEAD)   /* (LEAD: the scale, every key) */
         return -1;
     p = key_place(k);
     return p >= 7u ? (int32_t)(p - 7u) : -1;

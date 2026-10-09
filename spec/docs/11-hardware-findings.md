@@ -172,13 +172,16 @@ OCT- / OCT+ move them with the chords. The other modes (SEQ, DRUM, the games, th
 keys as they were. The HOME legend marks the plate keys with a bar that rises with the note.
 hichord.c: hc_plate_of_key / hc_plate_note / hc_plate_on, tested in hichord_test plate().
 
-## LEAD shows its one note (owner's report, 2026-10-09)
+## LEAD is a scale keyboard (owner's request, 2026-10-09)
 
-In LEAD the HOME screen kept naming the chord and drawing all its notes on the piano while only the
-root sounded. chord.c's one-voice branch did not build the chord at all (hc.cur, hc.name stale from
-the last chord mode), so the strumplate could not follow LEAD either. Now the chord is built as in
-the other modes and the root alone is played; HOME names the note that sounds (D3) and the piano
-shows it alone, the plate notes in white.
+First the display: in LEAD the HOME screen kept naming the chord and drawing all its notes while
+only the root sounded (chord.c's one-voice branch never built the chord; hc.cur stale). Then the
+owner's call: "in lead mode the strum thing should be disabled and it should just play quantized
+notes from the scale all the way up". LEAD now has no chords and no strumplate: all sixteen white
+keys walk the track's scale from the tonic at C4 (an octave above the chords), one note each, wrapping
+by the scale's length (a pentatonic repeats every five keys). HOME names the note (D4) with its degree
+(seven-note scales) and shows it alone on the piano; the legend numbers every key by its degree.
+hc_lead_note in hichord.c; hc.lead_note / lead_deg carry the display.
 
 ## ACOUSTIC GTR (owner's request)
 

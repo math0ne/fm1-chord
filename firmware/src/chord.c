@@ -87,12 +87,14 @@ static uint32_t chord_make(const track_t *t, uint32_t root, uint8_t *out, int32_
         return 1;
     }
     if (mode == CH_HI) {                                /* the HiChord layer (hichord.c) */
-        if (trk_vmode(t) != V_POLY) {                   /* one voice: the chord's root (LEAD). The chord is built
-                                                         * all the same: hc.cur and hc.name for the display and the
-                                                         * strumplate (fm1-chord) */
-            uint8_t nn[CHORD_MAX];
-            int32_t rr;
-            hc_make(t, root, nn, &rr, maskp);
+        if (trk_vmode(t) != V_POLY) {                   /* one voice (LEAD): a white key plays its note of the
+                                                         * scale (hc_lead_note), a MIDI note / step snaps onto it */
+            uint32_t d = 0;
+            int32_t rr = hc.cur_key < 27u ? hc_lead_note(t, hc.cur_key, &d) : scale_snap(t, (int32_t)root);
+            if (hc.cur_key >= 27u)
+                d = hs_degree_of(hc_mask(t), (uint32_t)t->p[P_ROOT], (uint32_t)(rr + 1200) % 12u);
+            hc.lead_note = (uint8_t)(clamp(rr, 0, 127) + 1);
+            hc.lead_deg = (uint8_t)d;
             *rp = rr;
             *maskp = 1;
             out[0] = (uint8_t)clamp(rr, 0, 127);

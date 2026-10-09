@@ -276,13 +276,18 @@ static int plate(void)
     bad += check("OCT+: the plate an octave up (F4 key: C5)", gate_note(t, 72) && ngated(t) == 1u);
     key_up(K_P0);
     song.octave = 0;
-    hc_play_set(t, HP_LEAD);                           /* LEAD: the root alone, the chord still built for the plate */
+    hc_play_set(t, HP_LEAD);                           /* LEAD: the scale over all the white keys from C4, no plate */
     key_down(K_VI);
-    bad += check("LEAD: the vi key plays A3 alone, the chord (Am) built for the display and the plate",
-                 gate_note(t, 57) && ngated(t) == 1u && str_eq(hc.name, "Am") && hc.cur.n == 3u);
+    bad += check("LEAD: the sixth key plays A4 alone (the scale from the tonic at C4), its degree vi",
+                 gate_note(t, 69) && ngated(t) == 1u && hc.lead_note == 70u && hc.lead_deg == 5u);
     key_down(K_P1);
-    bad += check("  a plate key: C5 (Am's third, an octave up) takes the one voice", gate_note(t, 72) && ngated(t) == 1u);
+    bad += check("  the ninth key: D5 (the scale goes on: no plate in LEAD)", gate_note(t, 74) && ngated(t) == 1u && hc_plate_of_key(t, K_P1) < 0);
     key_up(K_P1); key_up(K_VI);
+    t->p[P_SCALE] = 5;                                 /* C major pentatonic: five notes an octave */
+    key_down(K_VI);
+    bad += check("  pentatonic: the sixth key is the tonic an octave up (C5)", gate_note(t, 72) && ngated(t) == 1u && hc.lead_deg == 0u);
+    key_up(K_VI);
+    t->p[P_SCALE] = 1;
     hc_play_set(t, HP_SEQ);                            /* not a chord mode: the key is a degree an octave up */
     key_down(K_P0);
     bad += check("SEQ mode: F4 is the I chord an octave up again (C4 E4 G4)", gate_note(t, 60) && gate_note(t, 64) && gate_note(t, 67));
@@ -333,7 +338,7 @@ static int keys(void)
     bad += check("  E up: nothing left", !ngated(t));
     t->p[P_VOICE] = V_MONO;
     key_down(K_II);
-    bad += check("MONO (LEAD): the root alone (D3)", ngated(t) == 1u && gate_note(t, 50));
+    bad += check("MONO (LEAD): the key's note of the scale alone (the second key: D4)", ngated(t) == 1u && gate_note(t, 62));
     key_up(K_II);
     t->p[P_VOICE] = V_POLY;
     song.octave = 1;
@@ -523,9 +528,9 @@ static int play_modes(void)
     hc_play_set(t, HP_LEAD);
     bad += check("LEAD: the track is LEGATO (one voice)", t->p[P_VOICE] == V_LEGATO);
     key_down(K_I);
-    bad += check("  a key: the root alone (C3)", ngated(t) == 1u && gate_note(t, 48));
+    bad += check("  a key: its scale note alone (C4)", ngated(t) == 1u && gate_note(t, 60));
     key_down(K_III);
-    bad += check("  a second key: the new root, still one voice (E3)", ngated(t) == 1u && gate_note(t, 52));
+    bad += check("  a second key: the new note, still one voice (E4)", ngated(t) == 1u && gate_note(t, 64));
     key_up(K_III); key_up(K_I);
     bad += check("  released", !ngated(t));
     hc_play_set(t, HP_DRONE);
