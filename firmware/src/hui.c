@@ -904,7 +904,7 @@ static void hui_draw_head(void)
         cv_blit(0, 0);
         return;
     }
-    cv_rrect(0, 0, 100, HU_HEAD, 0, HC_GREY, T_BG);     /* the key */
+    cv_rrect(0, 0, 94, HU_HEAD, 0, HC_GREY, T_BG);      /* the key */
     str_cpy(b, HC_NOTE_NAME[(uint32_t)TSEL->p[P_ROOT] % 12u], sizeof b);
     str_cpy(b + str_len(b), " ", sizeof b - str_len(b));
     str_cpy(b + str_len(b), HC_SCALE_NAME[hui_scale_get()], sizeof b - str_len(b));
@@ -912,14 +912,14 @@ static void hui_draw_head(void)
     if (song.octave) {
         str_cpy(b, song.octave > 0 ? "+" : "", sizeof b);
         fmt_int(b + str_len(b), song.octave);
-        cv_text_r(97, 6, &AF_S, b, HC_INK, HC_GREY);
+        cv_text_r(91, 6, &AF_S, b, HC_INK, HC_GREY);
     }
-    cv_rrect(102, 0, 66, HU_HEAD, 0, HC_RED, T_BG);     /* the mode */
-    cv_text_c(135, 4, &AF_M, HP_SHORT[c->play % HP_COUNT], RGB(255, 240, 240), HC_RED);
+    cv_rrect(96, 0, 52, HU_HEAD, 0, HC_RED, T_BG);      /* the mode */
+    cv_text_c(122, 4, &AF_M, HP_SHORT[c->play % HP_COUNT], RGB(255, 240, 240), HC_RED);
     fmt_int(b, song.g[G_BPM]);
-    cv_text_on(172, 4, &AF_M, b, T_TEXT, T_BG);
+    cv_text_on(152, 4, &AF_M, b, T_TEXT, T_BG);          /* the tempo, the USB icon and the battery 8 px apart */
     if (usb.config && !usb.suspended)
-        cv_icon_mid(200, HU_HEAD / 2, 16, ICON_X_USB, T_MID, T_BG);
+        cv_icon_mid(198, HU_HEAD / 2, 16, ICON_X_USB, T_MID, T_BG);
     draw_battery(214);
     cv_blit(0, 0);
 }
@@ -1251,27 +1251,27 @@ static void hui_draw_piano(uint32_t deg)
         start += (12u - start % 12u) % 12u;
     }
     for (i = 0; i < 28u; i++)
-        cv_rrect(8 + (int32_t)i * 8, 2, 7, 54, 1, T_SURF, T_BG);
+        cv_rrect(8 + (int32_t)i * 8, 2, 7, 66, 1, T_SURF, T_BG);
     for (i = start; i < start + 48u && i < 128u; i++)
         if (on[i] && !IS_BLACK[i % 12u]) {
             int32_t x = 8 + (int32_t)((i - start) / 12u * 7u + WHITE_OF[i % 12u]) * 8;
-            cv_rrect(x, 2, 7, 54, 1, col, T_BG);
+            cv_rrect(x, 2, 7, 66, 1, col, T_BG);
             if (i % 12u == root)
-                cv_rrect(x + 2, 48, 3, 3, 1, HC_INK, col);
+                cv_rrect(x + 2, 60, 3, 3, 1, HC_INK, col);
         }
     for (i = start; i < start + 48u && i < 128u; i++)
         if (IS_BLACK[i % 12u]) {
             int32_t x = 8 + (int32_t)((i - start) / 12u * 7u + WHITE_OF[i % 12u]) * 8 + 5;
-            cv_rrect(x, 2, 5, 32, 1, on[i] ? col : T_RAISE, T_BG);
+            cv_rrect(x, 2, 5, 40, 1, on[i] ? col : T_RAISE, T_BG);
             if (on[i] && i % 12u == root)
-                cv_rrect(x + 1, 24, 3, 3, 1, HC_INK, col);
+                cv_rrect(x + 1, 32, 3, 3, 1, HC_INK, col);
         }
     for (i = 0; i < n; i++) {
         uint32_t x = hc.cur.note[i];
         if (x < start)
-            cv_rrect(2, 26, 4, 4, 2, col, T_BG);
+            cv_rrect(2, 32, 4, 4, 2, col, T_BG);
         else if (x >= start + 48u)
-            cv_rrect(234, 26, 4, 4, 2, col, T_BG);
+            cv_rrect(234, 32, 4, 4, 2, col, T_BG);
     }
 }
 
@@ -1326,7 +1326,7 @@ static void hui_draw_home(void)
         return;
     hui.sig[1] = sig;
     /* the chord */
-    cv_begin(240, 110, T_BG);
+    cv_begin(240, 98, T_BG);
     for (i = 0; i < HCL_LAYERS; i++) {                   /* the looper's layers: OFF dim, ARMED yellow, REC red, PLAY green */
         uint32_t st = hcl.l[i].state;
         uint16_t c = st == HLS_PLAY ? HC_GREEN : st == HLS_REC ? HC_RED : st == HLS_ARMED ? HC_YELLOW : T_RAISE;
@@ -1357,18 +1357,18 @@ static void hui_draw_home(void)
                 str_cpy(b + str_len(b), "  ", sizeof b - str_len(b));
                 str_cpy(b + str_len(b), invk == 1u ? "1ST INV" : "2ND INV", sizeof b - str_len(b));
             }
-            cv_text_c(120, 86, &AF_M, b, T_MID, T_BG);
+            cv_text_c(120, 76, &AF_M, b, T_MID, T_BG);
         } else if (!name[0]) {
-            cv_text_c(120, 86, &AF_M, "PLAY A WHITE KEY", T_DIM, T_BG);
+            cv_text_c(120, 76, &AF_M, "PLAY A WHITE KEY", T_DIM, T_BG);
         }
         if (lock)
-            cv_rrect(170, 90, 56, 18, 5, HC_RED, T_BG), cv_text_c(198, 92, &AF_S, "LOCKED", RGB(255, 240, 240), HC_RED);
+            cv_rrect(170, 79, 56, 18, 5, HC_RED, T_BG), cv_text_c(198, 81, &AF_S, "LOCKED", RGB(255, 240, 240), HC_RED);
         if (hc.hold)
-            cv_rrect(14, 90, 46, 18, 5, HC_GREEN, T_BG), cv_text_c(37, 92, &AF_S, "HOLD", HC_INK, HC_GREEN);
+            cv_rrect(14, 79, 46, 18, 5, HC_GREEN, T_BG), cv_text_c(37, 81, &AF_S, "HOLD", HC_INK, HC_GREEN);
     }
     cv_blit(0, HU_HEAD);
     /* the keyboard: 16 white keys, 11 black, the held ones in their degree's colour, the directions dim */
-    cv_begin(240, 80, T_BG);
+    cv_begin(240, 92, T_BG);
     if (held && hc.cur.n) {                              /* a chord sounds: its notes on a piano */
         hui_draw_piano(deg);
     } else {
@@ -1380,9 +1380,9 @@ static void hui_draw_home(void)
                 uint32_t d = hc_degree_of_key(TSEL, i, &o) % 7u;
                 int32_t x = x0 + (int32_t)p * (ww + 1);
                 char dn[2] = {(char)('1' + d), 0};
-                cv_rrect(x, 2, ww, 54, 2, on ? HC_DEG_COL[d] : T_SURF, T_BG);
-                cv_rrect(x + 3, 50, ww - 6, 3, 1, HC_DEG_COL[d], on ? HC_DEG_COL[d] : T_SURF);   /* the degree's colour */
-                cv_text_c(x + ww / 2, 33, &AF_S, dn, on ? HC_INK : T_MID, on ? HC_DEG_COL[d] : T_SURF);   /* its number */
+                cv_rrect(x, 2, ww, 66, 2, on ? HC_DEG_COL[d] : T_SURF, T_BG);
+                cv_rrect(x + 3, 62, ww - 6, 3, 1, HC_DEG_COL[d], on ? HC_DEG_COL[d] : T_SURF);   /* the degree's colour */
+                cv_text_c(x + ww / 2, 44, &AF_S, dn, on ? HC_INK : T_MID, on ? HC_DEG_COL[d] : T_SURF);   /* its number */
             }
         }
         for (i = 0; i < 27u; i++) {
@@ -1391,21 +1391,21 @@ static void hui_draw_home(void)
                 static const uint8_t AFTER[HC_NBLACK] = {0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14};   /* the white key it follows */
                 int32_t x = x0 + (int32_t)AFTER[p] * (ww + 1) + ww - 4;
                 uint16_t col = on ? (p < 3u ? HC_GREEN : HC_YELLOW) : T_RAISE;
-                cv_rrect(x, 2, 9, 32, 2, col, T_BG);
+                cv_rrect(x, 2, 9, 40, 2, col, T_BG);
                 if (p < 3u) {                            /* INVERT LOCK HOLD */
                     char fl[2] = {"ILH"[p], 0};
-                    cv_text_c(x + 4, 10, &AF_S, fl, on ? HC_INK : T_MID, col);
+                    cv_text_c(x + 4, 14, &AF_S, fl, on ? HC_INK : T_MID, col);
                 } else {                                 /* a joystick direction: the dot where it points */
                     static const int8_t DX[8] = {0, 1, 1, 1, 0, -1, -1, -1}, DY[8] = {-1, -1, 0, 1, 1, 1, 0, -1};
                     uint32_t dir = HC_BLACK_FN[p] - HD_UP;
-                    cv_rrect(x + 3 + DX[dir % 8u] * 2, 16 + DY[dir % 8u] * 6, 3, 3, 1, on ? HC_INK : T_MID, col);
+                    cv_rrect(x + 3 + DX[dir % 8u] * 2, 20 + DY[dir % 8u] * 8, 3, 3, 1, on ? HC_INK : T_MID, col);
                 }
             }
         }
     }
     {
         /* the sound and its effects */
-        cv_text_on(4, 61, &AF_M, HC_SOUNDS[c->sound % HC_NSOUNDS].name, HC_YELLOW, T_BG);
+        cv_text_on(4, 73, &AF_M, HC_SOUNDS[c->sound % HC_NSOUNDS].name, HC_YELLOW, T_BG);
         {
             static const char *const CHIP[12] = {"REV", "DLY", "CHO", "FLG", "TRM", "LFO", "GLD", "DRV", "TAPE", "FLT", "HP", "ST"};
             int32_t x = 236;
@@ -1413,12 +1413,12 @@ static void hui_draw_home(void)
                 if ((fxm >> (i - 1u)) & 1u) {
                     int32_t w = text_w(&AF_S, CHIP[i - 1u]) + 6;
                     x -= w + 3;
-                    cv_rrect(x, 62, w, 15, 3, HC_YELLOW, T_BG);
-                    cv_text_c(x + w / 2, 63, &AF_S, CHIP[i - 1u], HC_INK, HC_YELLOW);
+                    cv_rrect(x, 74, w, 15, 3, HC_YELLOW, T_BG);
+                    cv_text_c(x + w / 2, 75, &AF_S, CHIP[i - 1u], HC_INK, HC_YELLOW);
                 }
         }
     }
-    cv_blit(0, HU_HEAD + 110);
+    cv_blit(0, HU_HEAD + 98);
 }
 
 /* a menu: its rows, the selected one marked in the menu's colour */
