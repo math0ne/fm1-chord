@@ -78,7 +78,7 @@ static int test_key_menu(void)
     turn(EN_SELECT, 1); press(B_OCTUP); press(B_OCTUP);
     bad += check("JOYSTICK: CHROM", hc.t[0].mode == HM_CHROM && val_is(HU_KEY, RK_JOY, "CHROM"));
     turn(EN_SELECT, 1); press(B_OCTUP);
-    bad += check("BASS: ROOT", hc.t[0].bass == HB_ROOT);
+    bad += check("BASS: OFF (the default is SLASH; one step on)", hc.t[0].bass == HB_OFF);
     turn(EN_SELECT, 1); press(B_OCTUP);
     bad += check("VOICES: 4", hc.t[0].voices == HV_4 && val_is(HU_KEY, RK_VOICES, "4"));
     turn(EN_SELECT, 1); press(B_OCTUP);
@@ -402,6 +402,7 @@ static int test_seq_drums_mixer(void)
     track_t *t = &trk[0];
     uint32_t q = (uint32_t)FS * 60u / 120u, i, hits;
     hui_power_on();
+    hc.t[0].bass = HB_OFF; hc_apply(&trk[0]);          /* (the counts below are without the bass voice) */
     hc.t[0].stereo = 0;
     hc.t[0].voices = HV_4;
     hc_apply(t);
@@ -507,6 +508,7 @@ static int test_games(void)
     track_t *t = &trk[0];
     uint32_t q, i, n0;
     hui_power_on();
+    hc.t[0].bass = HB_OFF; hc_apply(&trk[0]);          /* (the note counts below are without the bass voice) */
     hc.t[0].stereo = 0;
     hc.t[0].voices = HV_4;
     hc_apply(t);
@@ -589,7 +591,7 @@ static int test_live_persist(void)
     track_t *t = &trk[0];
     hui_power_on();
     memset(hc_live, 0, sizeof hc_live);
-    hc.t[0].bass = HB_SLASH; hc.t[0].rev = HRV_HALL; hc.inv[7] = 2; hc.lock[9].on = 1; hc_apply(t);
+    hc.t[0].bass = HB_ROOT; hc.t[0].rev = HRV_HALL; hc.inv[7] = 2; hc.lock[9].on = 1; hc_apply(t);
     fm1_ms += 600; hui_live_poll();
     bad += check("live state: a change is noticed within 500 ms and packed", hui_live.dirty && hc_live[0]);
     fm1_ms += 2000; hui_live_poll();
@@ -597,11 +599,11 @@ static int test_live_persist(void)
     fm1_ms += 1500; hui_live_poll();
     bad += check("  saved 3 s after the last change", !hui_live.dirty);
     hc_init();                                         /* power off, on */
-    bad += check("  a fresh boot starts from the defaults", hc.t[0].bass == HB_OFF && hc.inv[7] == 0);
+    bad += check("  a fresh boot starts from the defaults (BASS SLASH)", hc.t[0].bass == HB_SLASH && hc.inv[7] == 0);
     hui_live_restore();
-    bad += check("  restored: BASS SLASH, the reverb, the inversion and the lock", hc.t[0].bass == HB_SLASH &&
+    bad += check("  restored: BASS ROOT, the reverb, the inversion and the lock", hc.t[0].bass == HB_ROOT &&
                  hc.t[0].rev == HRV_HALL && hc.inv[7] == 2 && hc.lock[9].on);
-    hc.t[0].bass = HB_OFF; hc.t[0].rev = 0; hc.inv[7] = 0; hc.lock[9].on = 0; hc_apply(t);
+    hc.t[0].bass = HB_SLASH; hc.t[0].rev = 0; hc.inv[7] = 0; hc.lock[9].on = 0; hc_apply(t);
     memset(hc_live, 0, sizeof hc_live);
     return bad;
 }

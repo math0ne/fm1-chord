@@ -54,6 +54,14 @@ not to work. Now the live state is packed like a preset into the settings record
 saved 3 s after the last change (one flash erase per edit session) and restored at boot
 (`hui_live_restore`, main.c). Key, scale, octave and tempo are Felucca's song and still reset.
 
+## Owner's choices and small UI fixes
+
+- BASS defaults to SLASH (the HiChord: OFF): slash chords from the first power-on.
+- The footer's action words sat 3 px under the keycaps' centre line (Felucca's cv_key_hint puts the
+  word at the cap's y − 1); they now sit on it.
+- The red keycaps (EDIT, REC) used near-white text; the panel LCD washes that out, so they use the
+  dark ink like the yellow and green caps.
+
 ## Numbers
 
 | | |

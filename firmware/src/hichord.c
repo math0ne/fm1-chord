@@ -151,6 +151,7 @@ static void hc_trk_defaults(hc_trk_t *c)
     c->stereo = 1;
     c->cutoff = 127;
     c->voices = HV_8;
+    c->bass = HB_SLASH;                                  /* (the HiChord: OFF; the owner's choice: slash chords from the start) */
 }
 
 static void hcs_key_write(const track_t *t, uint32_t k);              /* hcseq.c */

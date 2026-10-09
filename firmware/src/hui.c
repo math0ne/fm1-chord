@@ -835,7 +835,7 @@ static void hui_draw_foot(void)
         if (hui.screen == HU_HOME) {
             h[n++] = (hint_t){KC_SCL, "KEY", "KEY", HC_GREY, HC_INK};
             h[n++] = (hint_t){KC_FX, "SOUND", "SND", HC_YELLOW, HC_INK};
-            h[n++] = (hint_t){KC_EDIT, "MODE", "MODE", HC_RED, RGB(255, 240, 240)};
+            h[n++] = (hint_t){KC_EDIT, "MODE", "MODE", HC_RED, HC_INK};         /* (dark on red: the panel LCD washes white out) */
             h[n++] = (hint_t){KC_SAVE, "PRESET", "PRE", HC_GREEN, HC_INK};
         } else if (hui.screen == HU_PRESET) {
             h[n++] = (hint_t){KC_SELECT, "SLOT", "SLOT", T_KEY, T_INK};
@@ -844,7 +844,7 @@ static void hui_draw_foot(void)
             h[n++] = (hint_t){KC_HOME, "BACK", "BACK", T_KEY, T_INK};
         } else if (hui.screen == HU_LOOP) {
             h[n++] = (hint_t){KC_SELECT, "LAYER", "LAYR", T_KEY, T_INK};
-            h[n++] = (hint_t){KC_REC, "REC", "REC", HC_RED, RGB(255, 240, 240)};
+            h[n++] = (hint_t){KC_REC, "REC", "REC", HC_RED, HC_INK};
             h[n++] = (hint_t){KC_PLAY, "PLAY", "PLAY", HC_GREEN, HC_INK};
             h[n++] = (hint_t){KC_HOME, "BACK", "BACK", T_KEY, T_INK};
         } else {
@@ -870,7 +870,7 @@ static void hui_draw_foot(void)
                 const char *a = pass ? h[i].alt : h[i].act;
                 x = cv_keycap(x, 5, h[i].kc, h[i].fill, h[i].ink, T_BG);
                 if (a[0])
-                    x = cv_text_on(x + 2, 7, &AF_S, a, T_MID, T_BG);
+                    x = cv_text_on(x + 2, 4, &AF_S, a, T_MID, T_BG);   /* (on the keycap centre line, as cv_key_hint) */
                 x += gap;
             }
             break;
