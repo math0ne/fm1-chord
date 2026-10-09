@@ -52,7 +52,7 @@ int main(void)
     assert(p.favorites.factory[8][0] == 1 && p.favorites.filter == 1);
     assert(p.panel.enc[0] == 3); /* saving one feature preserves the other */
     p = original; p.magic = PERSIST_MAGIC_V5;
-    assert(settings_import(&p, sizeof p - sizeof p.hcl) == 2);   /* PER5: the live HiChord state empty */
+    assert(settings_import(&p, sizeof p - sizeof p.hcl) == 2);   /* PER5: the live chord machine state empty */
     p = original; p.magic = 0x50455233u;
     assert(settings_import(&p, sizeof p - sizeof p.hcl - sizeof p.hcp - sizeof p.favorites) == 2);
     assert(p.bold == 1 && !p.favorites.user && !p.favorites.filter);

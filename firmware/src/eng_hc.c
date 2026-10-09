@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* HICHORD: the HiChord's own voice, as its companion app describes it: every chord slot is one plain
+/* CHORD: a chord machine's voice, as the companion app of one describes it: every chord slot is one plain
  * oscillator (SINE, TRIANGLE, SAW, a band-limited SQUARE), or a two-operator FM pair (a sine carrier, a
  * sine modulator at a ratio, its depth decaying), or noise; the BASS slot can take another wave (SINE
- * under a SAW chord, TRIANGLE under SINE); the stereo partner (the HiChord's "layer 2", voice.c pair) can
+ * under a SAW chord, TRIANGLE under SINE); the stereo partner (the chord machine's "layer 2", voice.c pair) can
  * take a third (SAW left and SQUARE right: SAW SQUARE; SQUARE subs under SAWs: JUNO POLY; nothing: OCEAN
- * PAD). A TONE low-pass rounds the top. No filter sweep, no drive: the HiChord's sound is the raw wave,
+ * PAD). A TONE low-pass rounds the top. No filter sweep, no drive: the chord machine's sound is the raw wave,
  * the ADSR, the detuned pair and the effects.
- * The bass slot: hichord.c tells the engine which note is the chord's bass (eng_hc_bass[part]). */
+ * The bass slot: chordmachine.c tells the engine which note is the chord's bass (eng_hc_bass[part]). */
 enum { HW_SINE, HW_TRI, HW_SAW, HW_SQR, HW_FM, HW_NOISE };
 static const char *const N_HC_WAVE[] = {"SINE", "TRI", "SAW", "SQR", "FM", "NOISE"};
 static const char *const N_HC_ALT[] = {"SAME", "SINE", "TRI", "SAW", "SQR", "OFF"};
@@ -87,8 +87,8 @@ static void hc_eng_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, cons
     v->s[2] = nst;
 }
 
-/* {WAVE, BASS, LAYER2, RATIO (halves), DEPTH, DECAY, -, TONE}; the envelopes are the HiChord's presets
- * (hui.c sets them from the sound's env); the sends as a HiChord with its effects off */
+/* {WAVE, BASS, LAYER2, RATIO (halves), DEPTH, DECAY, -, TONE}; the envelopes are the chord machine's presets
+ * (hui.c sets them from the sound's env); the sends as a chord machine with its effects off */
 static const preset_t HC_ENG_PRESETS[] = {
     {"SINE", {HW_SINE, 3, 0, 2, 0, 0, 0, 127}, {30, 80, 110, 70}, 0, 0, FX(0, 0, 0, 0), 0},
     {"SAW", {HW_SAW, 2, 0, 2, 0, 0, 0, 110}, {30, 80, 110, 70}, 0, 0, FX(0, 0, 0, 0), 0},

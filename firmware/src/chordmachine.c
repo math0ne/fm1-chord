@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* The HiChord key layer (CHRD HI, chord.c): the white keys are scale degrees of the track's ROOT / SCALE
+/* The chord machine key layer (CHRD HI, chord.c): the white keys are scale degrees of the track's ROOT / SCALE
  * (DEGREE layout: the seven white keys at the left, F3..E4, are the degrees, the first the tonic; PIANO
  * layout: the key's own letter is the root, snapped onto the scale). In the chord modes the nine white
  * keys to their right, F4..G5, are the strumplate (hc_plate_on: one note of the chord last played each,
@@ -15,10 +15,10 @@
  * A direction is momentary: pressed before or after the chord key, it reshapes every chord key held
  * (the notes that stay keep sounding, the others are exchanged) and lets go with it. BASS SLASH: the
  * first chord key held is the bass of the chords the next keys play (the screen: "Em/C").
- * Both layouts sound an octave below the printed key (HC_BASE: the C4 key's tonic is C3), as the HiChord
+ * Both layouts sound an octave below the printed key (HC_BASE: the C4 key's tonic is C3), as the chord machine
  * does, so a chord with its bass two octaves down stays inside the keyboard's range.
  *
- * Every HiChord setting of a track lives in hc.t[] (hc_trk_t) and is projected onto the Felucca parameters
+ * Every chord machine setting of a track lives in hc.t[] (hc_trk_t) and is projected onto the Felucca parameters
  * it stands for by hc_apply (the envelope presets, glide, vibrato, drive, the sends and the bus settings,
  * the voice mode). The play modes (PLAY STRUM LEAD DRONE ARP REPEAT) sit between the keys and key_on /
  * key_off and run on the block clock (hc_tick, from events_block).
@@ -26,9 +26,9 @@
 #include "harmony.c"
 
 enum { HL_DEGREE, HL_PIANO };                            /* LAYOUT */
-enum { HB_OFF, HB_ROOT, HB_SLASH };                      /* BASS (HiChord CC 45) */
+enum { HB_OFF, HB_ROOT, HB_SLASH };                      /* BASS (chord machine CC 45) */
 enum { HP_PLAY, HP_STRUM, HP_LEAD, HP_DRONE, HP_ARP, HP_REPEAT, HP_SEQ, HP_DRUM, HP_DRUMLOOP, HP_HIRO, HP_EAR, HP_MIXER,
-       HP_COUNT };                                     /* the modes, in the HiChord's order */
+       HP_COUNT };                                     /* the modes, in the chord machine's order */
 enum { HST_SLOW, HST_MED, HST_FAST };                    /* STRUM speed */
 enum { HA_UP, HA_DOWN, HA_UPDN, HA_DNUP, HA_RND, HA_PICK, HA_COUNT };   /* ARP pattern */
 enum { HR_1_1, HR_1_2, HR_1_4, HR_1_8, HR_1_16, HR_1_16T, HR_1_32, HR_SW8, HR_SW16, HR_COUNT };   /* ARP / REPEAT rate */
@@ -75,7 +75,7 @@ enum { HG_INVERT = 8, HG_LOCK, HG_HOLD };
 static const uint8_t HC_BLACK_FN[HC_NBLACK] = {HG_INVERT, HG_LOCK, HG_HOLD, HD_UP, HD_UR, HD_RIGHT, HD_DR, HD_DOWN,
                                                HD_DL, HD_LEFT, HD_UL};
 
-typedef struct {                 /* a track's HiChord settings (a preset stores them) */
+typedef struct {                 /* a track's chord machine settings (a preset stores them) */
     uint8_t sound;               /* the sound (hui.c HC_SOUNDS) */
     uint8_t play;                /* HP_* */
     uint8_t strum;               /* HST_* */
@@ -84,7 +84,7 @@ typedef struct {                 /* a track's HiChord settings (a preset stores 
     uint8_t rev, dly, cho, flg, trem, lfo, glide, drive, tape;   /* the effects */
     uint8_t stereo, filt, hp;    /* STEREO, the filter wheel, HI-PASS: on / off */
     uint8_t cutoff;              /* the filter wheel: 0..127 */
-    uint8_t res;                 /* RESONANCE 0..127 (KNOB 2; the HiChord: its app's CC 30) */
+    uint8_t res;                 /* RESONANCE 0..127 (KNOB 2; the chord machine: its app's CC 30) */
     uint8_t atk, rel;            /* ATTACK / RELEASE fine-tuned (Felucca values), 0 = the envelope preset's */
     uint8_t mode;                /* HM_*: the modifier table (JOYSTICK) */
     uint8_t bass;                /* HB_* */
@@ -95,7 +95,7 @@ typedef struct {                 /* a track's HiChord settings (a preset stores 
     uint8_t dl_style, dl_var;    /* DRUM LOOP: the style and its variation */
     uint8_t sound_saved;         /* the sound before DRUM mode took the track (hui.c) */
     uint8_t rev_amt, dly_amt, cho_amt, flg_amt, trem_amt;   /* KNOB 4 on the effect's row (hui.c): the amount,
-                                                          * 1..127; 0 = the type's own (the HiChord's app CCs) */
+                                                          * 1..127; 0 = the type's own (the chord machine's app CCs) */
 } hc_trk_t;
 
 typedef struct {                 /* an arp pattern: two notes a step, slot roles 0..4 (ROOT 3RD 5TH 7TH 9TH/11TH) */
@@ -161,7 +161,7 @@ static void hc_trk_defaults(hc_trk_t *c)
     c->stereo = 1;
     c->cutoff = 127;
     c->voices = HV_8;
-    c->bass = HB_SLASH;                                  /* (the HiChord: OFF; the owner's choice: slash chords from the start) */
+    c->bass = HB_SLASH;                                  /* (the chord machine: OFF; the owner's choice: slash chords from the start) */
 }
 
 static void hcs_key_write(const track_t *t, uint32_t k);              /* hcseq.c */
@@ -192,12 +192,12 @@ static void hc_init(void)
     }
 }
 
-/* 1 = track t plays HiChord keys (a kit too: DRUM / DRUM LOOP / MIXER take the keys as well) */
+/* 1 = track t plays chord machine keys (a kit too: DRUM / DRUM LOOP / MIXER take the keys as well) */
 static int hc_on(const track_t *t) { return t->p[P_CHRD] == CH_HI; }
 static hc_trk_t *hc_of(const track_t *t) { return &hc.t[trk_index(t) % NTRK]; }
 
 /* ----------------------------------------------------- hc_apply --- */
-/* the Felucca parameters a track's HiChord settings stand for. The sound itself (the engine and its preset) is
+/* the Felucca parameters a track's chord machine settings stand for. The sound itself (the engine and its preset) is
  * the UI's (hui.c hc_sound_load, which calls this after). The master filter, STEREO partners, the flanger, the
  * tremolo's own LFO and TAPE are fx.c / voice.c extensions that read hc.t[] directly. */
 static void hc_apply(track_t *t)
@@ -269,7 +269,7 @@ static void hc_apply(track_t *t)
     t->p[P_CHRD] = CH_HI;
     for (i = 0; i < 4u; i++)                             /* the matrix: nothing (the sound is the preset's) */
         t->p[P_M1SRC + 3u * i] = 0;
-    /* STEREO partners (voice.c, fx.c): not in LEAD (one centred voice, as the HiChord's 3.0 LEAD) */
+    /* STEREO partners (voice.c, fx.c): not in LEAD (one centred voice, as the chord machine's 3.0 LEAD) */
     trk_pair[trk_index(t)] = (uint8_t)(c->stereo && c->play != HP_LEAD);
     trk_hc[trk_index(t)] = 1;
     if (t == TSEL) {                                     /* the master effects follow the live track (hcfx.c) */
@@ -376,7 +376,7 @@ static uint32_t hc_make(const track_t *t, uint32_t root, uint8_t *out, int32_t *
             bass += o;
     }
     hs_voice(&hc.cur, r, q, bass, c->voices, inv);
-    eng_hc_bass[ti % NPART] = (int16_t)bass;            /* the HICHORD engine: the bass slot's own wave */
+    eng_hc_bass[ti % NPART] = (int16_t)bass;            /* the CHORD engine: the bass slot's own wave */
     {                                                    /* the name: an inversion with no bass voice is named over
                                                           * its lowest note (C/E, C/G), as written; a bass voice is
                                                           * the lowest and names itself (ROOT: none, SLASH: /bass) */
@@ -715,7 +715,7 @@ static void hc_gate(track_t *t, int on)
 }
 
 /* a chord key went down (key k, track t): the play mode decides what sounds now */
-/* BASS SLASH (the HiChord: "hold one Chord Button for the bass, press another for the chord. Screen shows
+/* BASS SLASH (the chord machine: "hold one Chord Button for the bass, press another for the chord. Screen shows
  * Em/C"; its diagram of Am/C is C A C E: the bass, the chord on top). The key held first gives only its
  * bass note: its own chord, and any earlier chord key's, stop when chord key k comes down (k is in
  * hc.order already; the bass key stays there, held). In the modes where a key's chord sounds by itself. */

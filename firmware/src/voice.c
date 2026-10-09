@@ -12,7 +12,7 @@
  * declicks it); one of the part's own is restarted in place, as before. Extra UNISON
  * voices only start when there is room. */
 static uint32_t vage;                                   /* voice ages: one clock for every part */
-/* fm1-chord: STEREO partners (hichord.c hc_apply): a POLY note of a paired part starts a second voice, detuned
+/* fm1-chord: STEREO partners (chordmachine.c hc_apply): a POLY note of a paired part starts a second voice, detuned
  * (PAIR_FINE: ~8 cents) on the other side; fx.c mix_part renders the two sides and spreads them */
 static uint8_t trk_pair[NTRK];
 static uint8_t trk_hc[NTRK];                            /* fm1-chord: the part plays the chord layer (fx.c: its trim) */

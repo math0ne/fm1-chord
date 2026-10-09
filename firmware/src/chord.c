@@ -13,7 +13,7 @@
  * engine that maps the keys itself) ignores CHRD. Every source keeps the notes it started (kb_chord for a
  * key, mchord for a MIDI note) and its release ends exactly those, so CHRD / VOIC changed while it is held
  * leave nothing hanging. A note several sources hold sounds once and ends with the last of them. */
-/* CH_HI (fm1-chord, hichord.c): the keys are scale degrees and modifiers, up to six notes a chord */
+/* CH_HI (fm1-chord, chordmachine.c): the keys are scale degrees and modifiers, up to six notes a chord */
 enum { CH_OFF, CH_DIA3, CH_DIA7, CH_MAJ, CH_MIN, CH_DOM7, CH_MAJ7, CH_MIN7, CH_SUS4, CH_POW, CH_HI };
 enum { VC_CLOSE, VC_OPEN, VC_INV1, VC_INV2, VC_BASS };
 #define CHORD_MAX 6u                     /* (was 4: CH_HI voices six slots; the shapes below use four) */
@@ -30,7 +30,7 @@ static mchord_t mchord[MCHORD_N];
 /* the last chord played per track (the CHORD page shows it): its root, notes, and the shape's tones above the
  * root (bit i = i semitones, 0..11) */
 static struct { uint8_t root, n, note[CHORD_MAX]; uint16_t mask; uint8_t gen; char name[12]; } chord_last[NTRK];
-                                         /* name: CH_HI's (hichord.c; "" = chord_name of root and mask) */
+                                         /* name: CH_HI's (chordmachine.c; "" = chord_name of root and mask) */
 
 /* 1 = the track's keys are a kit: no chords */
 static int chord_kit(const track_t *t)
@@ -39,7 +39,7 @@ static int chord_kit(const track_t *t)
     return e->oneshot || (e->keys && e->keys(t, 0) >= 0);
 }
 
-#include "hichord.c"                    /* CH_HI: the HiChord key layer (fm1-chord) */
+#include "chordmachine.c"                    /* CH_HI: the chord machine key layer (fm1-chord) */
 
 /* the tones of the chord (semitones above *root, ascending, iv[0] = 0) -> their number; DIA may move *root
  * down onto the scale */
@@ -86,7 +86,7 @@ static uint32_t chord_make(const track_t *t, uint32_t root, uint8_t *out, int32_
         out[0] = (uint8_t)root;
         return 1;
     }
-    if (mode == CH_HI) {                                /* the HiChord layer (hichord.c) */
+    if (mode == CH_HI) {                                /* the chord machine layer (chordmachine.c) */
         if (hc_of(t)->play == HP_LEAD || trk_vmode(t) != V_POLY) {   /* LEAD (or one voice): a white key plays its
                                                          * note of the scale (hc_lead_note), a MIDI note / step snaps
                                                          * onto it */

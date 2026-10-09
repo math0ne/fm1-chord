@@ -352,7 +352,7 @@ static void draw_foot(void)
     const char *ename = e->name;
     int32_t x;
     sound_name(t, pn);
-    if (ui.home) {                                     /* CHRD HI (hichord.c): the chord played last, else HOME */
+    if (ui.home) {                                     /* CHRD HI (chordmachine.c): the chord played last, else HOME */
         if (hc_on(t) && chord_last[song.sel].n && chord_last[song.sel].name[0])
             str_cpy(ti, chord_last[song.sel].name, sizeof ti);
         else

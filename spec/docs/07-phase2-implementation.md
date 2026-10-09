@@ -1,6 +1,6 @@
 # 07 — Phase 2 implementation notes (2026-10-05)
 
-Phase 2 of `03-firmware-spec.md` is implemented and tested on the host: the HiChord's settings, play
+Phase 2 of `03-firmware-spec.md` is implemented and tested on the host: the chord machine's settings, play
 modes, effects, stereo voices, sound list and the whole colour UI with its three menus and presets.
 Nothing has been flashed. Firmware image: 508,660 B (Felucca stock 476,996 B; the window is ~568 KiB).
 RAM: 93.5 KB of 98.3 KB (4.8 KB headroom), pool 333 KB of 344 KB.
@@ -9,19 +9,19 @@ RAM: 93.5 KB of 98.3 KB (4.8 KB headroom), pool 333 KB of 344 KB.
 
 | File | Role |
 |---|---|
-| `firmware/src/hichord.c` | `hc_trk_t` (every HiChord setting of a track), `hc_apply` (projects them onto Felucca's parameters and buses), the play modes PLAY / STRUM / LEAD / DRONE / ARP / REPEAT on a sample clock (`hc_tick`), the arp patterns and rates, the gestures |
+| `firmware/src/chordmachine.c` | `hc_trk_t` (every chord machine setting of a track), `hc_apply` (projects them onto Felucca's parameters and buses), the play modes PLAY / STRUM / LEAD / DRONE / ARP / REPEAT on a sample clock (`hc_tick`), the arp patterns and rates, the gestures |
 | `firmware/src/hcfx.c` | the master stage after the master level: FILTER wheel (low-pass), HI-PASS, FLANGER (4 modes), TAPE (LOFI / VINYL / TAPE), OUT LEVEL |
 | `firmware/src/voice.c`, `fx.c` | STEREO partner voices (a detuned twin per note, the two sides mixed mid/side, width 0.7); bit-identical when off (the 87 golden renders are unchanged) |
 | `firmware/src/hui.c` | the UI: HOME, the KEY (grey) / SOUND (yellow) / MODE (red) menus, PRESETS (green), tap tempo, randomize, the sound list, the hand-over to Felucca's UI |
-| `firmware/src/settings_persist.c` | PER5: the four presets' HiChord state travels in the settings record |
+| `firmware/src/settings_persist.c` | PER5: the four presets' chord machine state travels in the settings record |
 | `tools/gen_aa_font.py`, `gfx.c` | a 44 px face "X" for the chord name (32 glyphs, 7.7 KB) |
-| `tests/hichord_test.c` | 137 checks: chords, gestures, play modes, stereo, the master stage |
+| `tests/chordmachine_test.c` | 137 checks: chords, gestures, play modes, stereo, the master stage |
 | `tests/hui_test.c` | 76 checks: every menu row, the knobs, tap tempo, presets, drawing, the hand-over |
 | `tests/hui_shot.c` | renders 12 screens (`build/hui_shots/*.png`) |
 
-## The controls (HiChord gesture → FM-1)
+## The controls (chord machine gesture → FM-1)
 
-| HiChord | FM-1 |
+| chord machine | FM-1 |
 |---|---|
 | 7 chord buttons | the white keys, C4 = I (two octaves of degrees) |
 | joystick 8 directions | C#4 ↑, D#4 ↗, F#4 →, G#4 ↘, A#4 ↓, C#5 ↙, D#5 ←, F#5 ↖ |
@@ -43,7 +43,7 @@ HOME held one second opens Felucca's full synth UI underneath; SAVE with HOME he
 
 ## What a setting does (the projection)
 
-ENVELOPE → ATK/DEC/SUS/REL from the seven HiChord presets; GLIDE → Felucca GLIDE 0/30/55/85; LFO →
+ENVELOPE → ATK/DEC/SUS/REL from the seven chord machine presets; GLIDE → Felucca GLIDE 0/30/55/85; LFO →
 LFO→PITCH 0/2/4/7; TREMOLO → LFO→AMP 90 at the tempo division (one LFO per track: vibrato and tremolo share its
 rate when both are on); DRIVE → DIST 0/28/56/90/127; CHORUS → the chorus send 40/60/85/110 and the bus rate/depth;
 DELAY → the delay send 55 and DLY TIME; REVERB → the reverb send and the bus (ROOM/HALL/PLATE/AMBIENT on
@@ -57,17 +57,17 @@ ACOUSTIC, BRASS, PIANO, VIBES, VIOLINS, VOX AHH, SAX, HARP, HUMMING, SYNTH BASS,
 JUNO POLY, OCEAN PAD, WOBBLE BASS, BUZZ ORGAN, ORGAN, HORNS, E GUITAR, KALIMBA, SAW BASS, SHIMMER, GOSPEL ORGAN.
 Each carries a default envelope preset (KEYS for the keyboard-like ones).
 
-## Deviations from the HiChord, deliberate
+## Deviations from the chord machine, deliberate
 
 - No mic features (vocoder, tuner, mic sample): no mic. No TRS OUT (no TX). No USB AUDIO setting (Felucca's UAC is always on).
 - SPEAKER is FLAT / LOWCUT / BASS+ (Felucca's speaker EQ) instead of a mute: the codec cannot mute the speaker in software.
 - OG joystick mode = DEFAULT (the 2.8 doubled-3rd 9th voicing is not reproduced).
-- TEMPO 40..240 (Felucca's range; the HiChord goes to 300).
+- TEMPO 40..240 (Felucca's range; the chord machine goes to 300).
 - The looper, sequencer, drums, drum loops, mixer and the games are phase 3/4: PLAY / REC / SEQ say "LOOPER: SOON".
 
 ## Verified
 
-`tests/run_tests.sh`: every Felucca test, the 87 golden renders bit-identical, plus `hichord_test` and
+`tests/run_tests.sh`: every Felucca test, the 87 golden renders bit-identical, plus `chordmachine_test` and
 `hui_test`. The firmware compiles for the chip. Known cost: none measured on hardware yet; the host CPU
 regression (instructions per sample) is unchanged for the stock presets.
 

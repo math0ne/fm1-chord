@@ -467,11 +467,11 @@ static void keyboard_block(void)
                 kb_note[k] = KB_SILENT;
             else if (song.grid)                   /* the DRUM grid: a lane key plays its lane, the rest are the UI's */
                 kb_note[k] = key_black(k) && key_place(k) < NLANE ? DRUM_LANE_NOTE[key_place(k)] : KB_SILENT;
-            else if (hc_on(&trk[kb_trk[k]]) && key_black(k)) {   /* CHRD HI: a modifier (hichord.c) */
+            else if (hc_on(&trk[kb_trk[k]]) && key_black(k)) {   /* CHRD HI: a modifier (chordmachine.c) */
                 kb_note[k] = KB_SILENT;
                 hc_black(k, 1);
                 continue;
-            } else if (hc_on(&trk[kb_trk[k]])) {  /* CHRD HI: a degree, by the play mode (hichord.c) */
+            } else if (hc_on(&trk[kb_trk[k]])) {  /* CHRD HI: a degree, by the play mode (chordmachine.c) */
                 kb_note[k] = (uint8_t)hc_root_note(&trk[kb_trk[k]], k);
                 hc_key_on(k, &trk[kb_trk[k]]);
                 continue;
@@ -741,7 +741,7 @@ static void events_block(uint32_t n)
         t->aholdp = t->p[P_AHOLD];
     }
     keyboard_block();
-    hc_tick(n);                                       /* CHRD HI: the rolls, the ARP, the REPEAT gate (hichord.c) */
+    hc_tick(n);                                       /* CHRD HI: the rolls, the ARP, the REPEAT gate (chordmachine.c) */
     while (mi_r != mi_w) {                            /* USB-MIDI (and TRS) in */
         uint32_t at = mi_r % MQ, pkt = midi_in_q[at], status = (pkt >> 8) & 0xFFu;
         uint32_t st = status & 0xF0u, ch = status & 0x0Fu;

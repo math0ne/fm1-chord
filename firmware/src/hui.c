@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* The HiChord user interface on the FM-1's 240 x 240 screen: HOME (the chord played, big; the key, the mode,
- * the tempo; the keys as a keyboard; the sound and its effects) and three menus as the HiChord has them,
+/* The chord machine user interface on the FM-1's 240 x 240 screen: HOME (the chord played, big; the key, the mode,
+ * the tempo; the keys as a keyboard; the sound and its effects) and three menus as a chord machine has them,
  * colour-coded: KEY (SCL, grey), SOUND (FX, yellow: the sounds, the effects, the settings), MODE (EDIT, red:
- * the play modes and the tempo), and PRESETS (SAVE: P1..P4). Every option of the HiChord's menus and no
+ * the play modes and the tempo), and PRESETS (SAVE: P1..P4). Every option of the chord machine's menus and no
  * other. Felucca's own UI stays underneath (HOME held: the advanced synth; SAVE + HOME: back).
  *   SELECT    the cursor of a menu; on HOME the key
  *   OCT- / +  the value of the row (a menu); the octave (HOME); both: RANDOMIZE (ALL on KEY, the sound on
@@ -43,7 +43,7 @@ static const hc_sound_t HC_SOUNDS[] = {
     {"ACOUSTIC GTR", 9, 9, HE_KEYS},                    /* fm1-chord: a plucky guitar for LEAD (PHYS) */
 };
 #define HC_NSOUNDS (sizeof HC_SOUNDS / sizeof HC_SOUNDS[0])
-/* the HiChord's ten scales (CC 103 order) -> Felucca's SCALE values */
+/* the chord machine's ten scales (CC 103 order) -> Felucca's SCALE values */
 static const uint8_t HC_SCALE_V[10] = {1, 2, 7, 11, 5, 6, 12, 3, 4, 9};
 static const char *const HC_SCALE_NAME[10] = {"MAJOR", "MINOR", "HARM MIN", "MELOD MIN", "MAJ PEN", "MIN PEN", "BLUES",
                                               "DORIAN", "MIXOLYD", "LYDIAN"};
@@ -78,10 +78,10 @@ static const char *const HC_OUT_NAME[2] = {"HOT", "LINE"};
 static const char *const HC_SPK_NAME[3] = {"FLAT", "LOWCUT", "BASS+"};
 
 #ifndef HUI_DEFAULT
-#define HUI_DEFAULT 1                                   /* the HiChord UI at power-on (the host tests: 0) */
+#define HUI_DEFAULT 1                                   /* the chord machine UI at power-on (the host tests: 0) */
 #endif
 static struct {
-    uint8_t on;                  /* the HiChord UI is up (0: Felucca's) */
+    uint8_t on;                  /* the chord machine UI is up (0: Felucca's) */
     uint8_t screen;              /* HU_* */
     uint8_t sel[HU_N];           /* the cursor of each menu */
     uint8_t top[HU_N];           /* the first row shown */
@@ -93,7 +93,7 @@ static struct {
     uint32_t rec_t0;             /* REC held: clear the layer */
     uint32_t tap_ms[4];          /* tap tempo: the EDIT taps */
     uint8_t ntap;
-    uint8_t midi_in;             /* the MIDI IN setting (hichord.c reads it) */
+    uint8_t midi_in;             /* the MIDI IN setting (chordmachine.c reads it) */
     uint8_t out_line;            /* OUT LEVEL: LINE (-10 dB) */
     uint32_t rnd;
     uint8_t preset_used[4];      /* P1..P4 hold something */
@@ -123,7 +123,7 @@ static uint32_t hui_rand(uint32_t n)
     return n ? (r >> 8) % n : 0u;
 }
 
-/* the live track's HiChord settings */
+/* the live track's chord machine settings */
 static hc_trk_t *hui_c(void) { return &hc.t[song.sel]; }
 static void hui_apply(void) { hc_apply(TSEL); }
 static int hui_row_value(uint32_t sc, uint32_t row, char *b);   /* (below) */
@@ -177,14 +177,14 @@ static void hui_fx_turn(hc_trk_t *c, uint32_t row, int32_t s)
     *amt = (uint8_t)clamp((int32_t)hui_fx_amount(c, row) + s * 4, 1, 127);
 }
 
-/* the key (ROOT) and the scale are the HiChord's: global, every track's */
+/* the key (ROOT) and the scale are the chord machine's: global, every track's */
 static void hui_key_set(int32_t root)
 {
     uint32_t i;
     for (i = 0; i < NTRK; i++)
         trk[i].p[P_ROOT] = (int16_t)((root % 12 + 12) % 12);
 }
-static uint32_t hui_scale_get(void)                     /* the HiChord scale index of the tracks' SCALE */
+static uint32_t hui_scale_get(void)                     /* the chord machine scale index of the tracks' SCALE */
 {
     uint32_t i;
     for (i = 0; i < 10u; i++)
@@ -199,7 +199,7 @@ static void hui_scale_set(uint32_t s)
         trk[i].p[P_SCALE] = HC_SCALE_V[s % 10u];
 }
 
-/* a sound of the list onto track t: its engine, its preset (ui.c), its envelope; the HiChord settings on top */
+/* a sound of the list onto track t: its engine, its preset (ui.c), its envelope; the chord machine settings on top */
 static void hc_sound_load(track_t *t, uint32_t idx)
 {
     const hc_sound_t *s = &HC_SOUNDS[idx % HC_NSOUNDS];
@@ -215,7 +215,7 @@ static void hc_sound_load(track_t *t, uint32_t idx)
     hc_apply(t);
 }
 
-/* the HiChord UI takes a track: its chord keys on, its sound loaded */
+/* the chord machine UI takes a track: its chord keys on, its sound loaded */
 static void hui_track_init(track_t *t)
 {
     hc_trk_t *c = hc_of(t);
@@ -266,8 +266,8 @@ static int hc_preset_unpack(const uint8_t *b)
     hui.out_line = b[k++] & 1u;
     return 1;
 }
-/* The live state across power-off, as the HiChord keeps its sound, effects, mode, inversions and locks
- * (key, scale, octave and tempo are Felucca's song and reset, as on the HiChord): packed like a preset
+/* The live state across power-off, as the chord machine keeps its sound, effects, mode, inversions and locks
+ * (key, scale, octave and tempo are Felucca's song and reset, as on the chord machine): packed like a preset
  * into hc_live (settings_persist.c, PER6), saved with the settings 3 s after the last change (one flash
  * erase per edit session, not per knob click), restored at boot (main.c) */
 static struct { uint32_t at_ms, poll_ms; uint8_t dirty; } hui_live;
@@ -595,7 +595,7 @@ static void hui_mode_set(track_t *t, uint32_t play)
 }
 
 /* a layer began to play: the live instrument moves to the lowest layer not playing, with the same sound
- * and settings (the HiChord: live playing follows the layer being built) */
+ * and settings (the chord machine: live playing follows the layer being built) */
 static void hui_looper_advance(void)
 {
     uint32_t live = hcl_live(), cur = song.sel;

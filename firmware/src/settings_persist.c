@@ -5,7 +5,7 @@
  * palette: UI_PAL_TAG + index; an old id (below 20, earlier firmware) is migrated on import.
  * bold: no longer used (one font weight); kept as it was saved, unless it holds the HOLD setting (panel.c).
  * zoom: no longer used (the large readout); kept as it was saved, unless it holds the LEDS setting (panel.c). */
-/* PER5 (fm1-chord): hcp, the four HiChord presets' own state (hui.c hc_preset_pack: the chord settings, the
+/* PER5 (fm1-chord): hcp, the four chord machine presets' own state (hui.c hc_preset_pack: the chord settings, the
  * key inversions and locks), opaque bytes here; a PER4 record (upstream Felucca) imports with them empty */
 #define HC_PRESET_BYTES 256u
 typedef struct {
@@ -14,7 +14,7 @@ typedef struct {
     uint32_t bold;
     struct { uint8_t factory[16][32]; uint32_t user, filter; } favorites;
     uint8_t hcp[4][HC_PRESET_BYTES];
-    uint8_t hcl[HC_PRESET_BYTES];                /* PER6: the live HiChord state, back after power-off (hui.c) */
+    uint8_t hcl[HC_PRESET_BYTES];                /* PER6: the live chord machine state, back after power-off (hui.c) */
 } persist_t;
 #define PERSIST_MAGIC 0x50455236u
 #define PERSIST_MAGIC_V5 0x50455235u

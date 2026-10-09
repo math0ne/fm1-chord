@@ -3,7 +3,7 @@
 # Copyright (C) 2026 fm1-chord contributors
 """The fm1-chord controls diagram (screenshots/controls.png): a drawn schematic of the FM-1's panel (the
 geometry of Felucca's docs/panel.jpg: 8 knobs, 12 buttons in two rows, OCT- / OCT+, 27 keys) with every
-control labelled by what it does in the HiChord UI. One colour scheme throughout: a control is drawn in
+control labelled by what it does in the chord machine UI. One colour scheme throughout: a control is drawn in
 the colour of what it opens or does (yellow sound, grey key, red mode, green presets and play, blue
 looper, white neutral), and its card carries the same bar. Cards size themselves to their text. Pillow only.
 
@@ -216,7 +216,7 @@ def main(out):
     d.text((34, ly + 28), "The seven at the left play chords: the scale degrees 1–7 (I, ii … vii).  The nine at the right: the "
                           "strumplate, one note of the chord each, rising — swipe to strum", fill=INK, font=f15)
     d.text((34, ly + 50), "BLACK KEYS", fill=DIM, font=F_TITLE)
-    d.text((34, ly + 66), "C#4 ↑  D#4 ↗  F#4 →  G#4 ↘  A#4 ↓  C#5 ↙  D#5 ←  F#5 ↖  the HiChord's joystick, held with a chord;  "
+    d.text((34, ly + 66), "C#4 ↑  D#4 ↗  F#4 →  G#4 ↘  A#4 ↓  C#5 ↙  D#5 ←  F#5 ↖  the joystick, held with a chord;  "
                           "F#3 INVERT  G#3 LOCK  A#3 HOLD", fill=INK, font=f15)
     d.text((34, ly + 90), "Colours: yellow sound · grey key · red mode · green presets and play · blue looper.  "
                           "OCT− and OCT+ together: RANDOMIZE.  SAVE with HOME held: back from Felucca's synth.", fill=DIM, font=f13)

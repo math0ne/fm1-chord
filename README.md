@@ -1,7 +1,7 @@
 # fm1-chord
 
-A custom firmware that turns the M-VAVE FM-1 pocket synth into a HiChord-style chord instrument.
-Built on [Felucca](https://github.com/hugelton/Felucca). Clean-room: nothing from the HiChord's firmware.
+A custom firmware that turns the M-VAVE FM-1 pocket synth into a chord-machine style instrument.
+Built on [Felucca](https://github.com/hugelton/Felucca). Clean-room: nothing from any other instrument's firmware.
 
 **White keys play chords, then strum them.** The seven white keys at the left are the scale degrees
 in the current key and scale, so every chord fits: the first is I, the next ii, up to vii. The nine
@@ -10,19 +10,19 @@ last played, rising from key to key, so a swipe across them strums it. In LEAD e
 a note of the scale instead, up from the tonic, as many at once as you hold. The screen names the chord (or the note) and shows
 it on a piano; at rest it shows what every key does.
 
-**Black keys change them.** The eight black keys of the middle octaves are the HiChord's joystick
+**Black keys change them.** The eight black keys of the middle octaves are the chord machine's joystick
 directions (7ths, 9ths, sus, dim, aug, borrowed chords, in four tables); F#3 cycles the inversion
 (C, C/E, C/G), G#3 locks a change to a key, A#3 holds. With BASS on SLASH (the default), the key held
 first is the bass and the next one the chord: Em/C.
 
-**Everything else the HiChord does:** Play, Strum, Lead, Drone, Arp, Repeat, a 16-step chord
+**Everything else a chord machine does:** Play, Strum, Lead, Drone, Arp, Repeat, a 16-step chord
 sequencer, drum pads, 56 drum loops, a 4-layer looper, a mixer, Chord Hiro and the Ear Trainer; 37 sounds
-(the HiChord's, plus an acoustic guitar for leads),
+(36 classic ones, plus an acoustic guitar for leads),
 7 envelope presets, reverb, delay, chorus, flanger, tremolo, vibrato, glide, drive, tape, stereo, a filter
 wheel; key, scale, bass, voices, voice leading; four presets; MIDI in and out. Only the mic features and
 Bluetooth are missing.
 
-**Controls.** Three menus on three buttons, colour-coded like the HiChord's: **SCL** key (grey),
+**Controls.** Three menus on three buttons, colour-coded: **SCL** key (grey),
 **FX** sound (yellow), **EDIT** mode (red), **SAVE** presets. The PRESETS and ALGORITHM knobs pick the
 sound and the mode from a list, ENV and LFO open theirs, KNOB 1 to 4 are filter, resonance, attack
 and release with the value shown as you turn (KNOB 4 sets an effect's amount on its row in the sound

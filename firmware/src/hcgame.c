@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* The HiChord's games.
+/* The chord machine's games.
  *   CHORD HIRO   ten songs as Nashville charts (a degree, a direction for its seventh, beats). The chart runs
  *                at the tempo (SPEED 50..100 %); the player presses the chord's key within the window of the
  *                DIFFICULTY (EASY +-200 ms, MEDIUM 150, HARD 100, EXPERT 50): PERFECT inside a quarter of it,
@@ -8,7 +8,7 @@
  *   EAR TRAINER  six levels: 1 a triad (which degree?), 2 a four-chord progression, 3 a chord with a
  *                modification (the degree and the direction), 4 a progression with modifications, 5 and 6
  *                an interval from the tonic (which degree?). F#3 replays the question; the streak counts.
- * Included by hichord.c after hcseq.c; runs in the audio ISR (hcg_tick from hc_tick); the UI (hui.c) shows it. */
+ * Included by chordmachine.c after hcseq.c; runs in the audio ISR (hcg_tick from hc_tick); the UI (hui.c) shows it. */
 enum { HGD_EASY, HGD_MEDIUM, HGD_HARD, HGD_EXPERT, HGD_COUNT };
 static const char *const HGD_NAME[HGD_COUNT] = {"EASY", "MEDIUM", "HARD", "EXPERT"};
 static const uint16_t HGD_WINDOW_MS[HGD_COUNT] = {200, 150, 100, 50};

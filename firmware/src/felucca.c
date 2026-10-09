@@ -100,5 +100,5 @@
 #if FELUCCA_CDC
 #include "console.c"
 #endif
-#include "hui.c"                 /* fm1-chord: the HiChord UI (over Felucca's) */
+#include "hui.c"                 /* fm1-chord: the chord machine UI (over Felucca's) */
 #include "main.c"

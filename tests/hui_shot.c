@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* The HiChord UI's screens as the device draws them (the real UI code on the stub display, a colour palette):
+/* The chord machine UI's screens as the device draws them (the real UI code on the stub display, a colour palette):
  * HOME idle, HOME with a chord and a modifier held, the KEY, SOUND (top and scrolled), MODE and PRESETS menus,
  * a message. PPMs into OUTDIR (Pillow converts them: tests/hui_shot.py or by hand).
  *   build/host/hui_shot OUTDIR

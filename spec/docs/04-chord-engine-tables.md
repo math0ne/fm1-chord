@@ -1,12 +1,12 @@
 # 04 — Chord engine tables (implementation data)
 
 Data tables for `harmony.c` / `chordkb.c`. Semitones are relative to the chord root unless noted.
-Where the HiChord's exact behaviour is unpublished, the choice is marked **(assumption)** so it can be
+Where the chord machine's exact behaviour is unpublished, the choice is marked **(assumption)** so it can be
 revisited against a real unit.
 
 ## 1. Scales
 
-Index order matches HiChord CC 103. Pitch classes relative to the key tonic.
+Index order matches chord machine CC 103. Pitch classes relative to the key tonic.
 
 | # | Name | Degrees (semitones) | Notes |
 |---|---|---|---|
@@ -42,7 +42,7 @@ to the scale's notes in order, wrapping into the next octave for buttons beyond 
 (MAJ PEN: 1 2 3 5 6 1' 2'; MIN PEN: 1 ♭3 4 5 ♭7 1' ♭3'; BLUES: 1 ♭3 4 ♭5 5 ♭7 1'). Each root takes the
 triad built from scale tones nearest a third and a fifth above it, falling back to Maj/min by the
 third that is present, and to a power chord if neither third is in the scale (BLUES ♭5 root). Store
-the result as an explicit 7-entry table per scale after listening tests on a real HiChord.
+the result as an explicit 7-entry table per scale after listening tests on a real chord machine.
 
 ## 3. Chord types (intervals)
 
@@ -121,7 +121,7 @@ Output: (root offset, quality). `~` means "depends on the input family".
 |---|---|
 | ↑ | MinMaj7 |
 | ↗ | Dom7alt |
-| → | **key +1 semitone** (global, latches while held? No: HiChord modulates live; implement as a key change) |
+| → | **key +1 semitone** (global, latches while held? No: chord machine modulates live; implement as a key change) |
 | ↘ | HalfDim7 |
 | ↓ | Maj13 |
 | ↙ | Six9 |
@@ -209,7 +209,7 @@ RANDOM (runtime shuffle of present slots), FINGERPICK (user/app-editable; defaul
 **assumption**). When a slot is absent in the current chord (triad has no 7th) the step plays the
 nearest present slot below it **(assumption)**.
 
-Rates (index order = HiChord): 1/1, 1/2, 1/4, 1/8, 1/16, 1/16T, 1/32, SWING8, SWING16. Swing = the
+Rates (index order = chord machine): 1/1, 1/2, 1/4, 1/8, 1/16, 1/16T, 1/32, SWING8, SWING16. Swing = the
 off-beat delayed by 1/3 of the step. Gate length = current Release time.
 
 ## 10. Drum loop format
@@ -220,7 +220,7 @@ typedef struct { uint8_t step[16]; } beat_t;   /* bit0 kick, bit1 snare, bit2 cl
 beat_t DRUM_LOOPS[7][8];   /* 7 styles x 8 variations: ORIG, GHOST, BUSY, SYNC, FILL, HALF, DOUBLE, PERC */
 ```
 
-Styles (3.0 list): ROCK, BREAK, DUB, FUNK, HOUSE, DEMBOW, SWING. The HiChord patterns themselves are
+Styles (3.0 list): ROCK, BREAK, DUB, FUNK, HOUSE, DEMBOW, SWING. The chord machine patterns themselves are
 not public; author our own 56.
 
 ## 11. Envelope presets

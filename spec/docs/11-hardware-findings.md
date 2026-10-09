@@ -19,7 +19,7 @@ third buffer (`render_mono`) that `fx.c` adds to the mid only. Verified: equal L
 
 Report: the filter wheel adds a lot of noise. On the host the filter was clean at full level, and on
 the unit the coefficients and states matched the host. The cause is precision: the master chain is
-Q15, the master level is applied before the HiChord master effects, and the wheel used perform.c's
+Q15, the master level is applied before the chord machine master effects, and the wheel used perform.c's
 `pf_svf`, which shifts its input down 2 bits and truncates its state updates at Q13. At a quiet
 MASTER the signal is a few hundred LSB and the filter's steps of 4 LSB (plus truncation limit cycles)
 sit 30-40 dB under it: a hiss that follows the wheel. Fix: `hcfx.c` `hc_svf`, the same filter at Q21
@@ -31,12 +31,12 @@ to a third at 64 and a thirtieth at 20 with no floor; the unit's USB tap shows t
 
 Report: two keys at once did not behave as a slash chord. With BASS set to SLASH the second key's chord
 did take the first key's root as its bass and the name read "Em/C", but the first key's own chord kept
-sounding under it: two chords. The HiChord's diagram of Am/C is C A C E, the bass and the chord only.
-Now (`hc_slash_take`, hichord.c): when the chord key comes down, the held bass key's chord stops and
+sounding under it: two chords. The chord machine's diagram of Am/C is C A C E, the bass and the chord only.
+Now (`hc_slash_take`, chordmachine.c): when the chord key comes down, the held bass key's chord stops and
 only its bass note remains; letting the chord key go while the bass key is held brings that key's
 own chord back; letting the bass key go first re-voices the chord over its own root; a further key
 is the new chord over the same bass. The home screen names the chord key, not the bass key.
-BASS is OFF by default, as on the HiChord: KEY menu → BASS → SLASH turns it on.
+BASS is OFF by default, as on the chord machine: KEY menu → BASS → SLASH turns it on.
 
 ## Inversions on the display
 
@@ -47,7 +47,7 @@ and names the chord (none, or /bass).
 
 ## The chord settings across power-off
 
-The HiChord keeps its sound, effects, mode, inversions and chord locks across power-off and resets
+The chord machine keeps its sound, effects, mode, inversions and chord locks across power-off and resets
 only key, scale, octave and tempo. Ours started from the defaults at every boot, so every reflash
 (a reboot) also dropped BASS back to OFF, which is what the unit reported while slash chords seemed
 not to work. Now the live state is packed like a preset into the settings record (PER6, `hcl`),
@@ -65,15 +65,15 @@ one block later (`hcd_loop_release`); the host render then shows the hits ringin
 
 ## Owner's choices and small UI fixes
 
-- BASS defaults to SLASH (the HiChord: OFF): slash chords from the first power-on.
+- BASS defaults to SLASH (the chord machine: OFF): slash chords from the first power-on.
 - The footer's action words sat 3 px under the keycaps' centre line (Felucca's cv_key_hint puts the
   word at the cap's y − 1); they now sit on it.
 - The red keycaps (EDIT, REC) used near-white text; the panel LCD washes that out, so they use the
   dark ink like the yellow and green caps.
 
-## Effect amounts on KNOB 4 (beyond the HiChord's device UI)
+## Effect amounts on KNOB 4 (beyond the chord machine's device UI)
 
-The HiChord device only cycles each effect's type; the amounts are its app's CCs, which we do not
+The chord machine device only cycles each effect's type; the amounts are its app's CCs, which we do not
 speak. Now, in the SOUND menu with the REVERB, DELAY, CHORUS, FLANGER or TREMOLO row selected,
 KNOB 4 sets the amount (the reverb, delay and chorus sends, the flanger's wet, the tremolo's depth;
 1..127, 4 a click); the row reads "HALL 65", the footer shows the K4 "AMOUNT" hint, and a knob
@@ -83,7 +83,7 @@ travel with the presets and across power-off.
 
 ## Chords over drums
 
-As on the HiChord: record the drum loop into a looper layer, play on the next. DRUM LOOP mode,
+As on the chord machine: record the drum loop into a looper layer, play on the next. DRUM LOOP mode,
 REC (armed), REC again (recording one loop; BARS on the LOOPER screen, or REC a third time to close a
 free first layer), the layer plays and the live instrument moves to layer 2; ALGORITHM knob to PLAY
 (the chord sound returns) and play. `tests/hui_test.c test_drums_under_chords` runs this path.
@@ -107,13 +107,13 @@ button, which then acts as on HOME. One screen (`HU_PICK`, `hui_pick_*`, `hui_dr
 ## Keys from the console
 
 `hc key K 0|1` holds or releases key K (0 = F3 .. 26 = G5) through the keyboard scan (`hc_dbg_notes`
-in hichord.c, ORed into the scan in seq.c keyboard_block), so chord gestures can be played on the
+in chordmachine.c, ORed into the scan in seq.c keyboard_block), so chord gestures can be played on the
 unit from a script and read back with `hc`. Checked after a reboot: `hc key 7 1` gives C with its
 bass (24 48 52 55 60 67), `hc key 11 1` on top gives "Em/C" with 24 52 55 59 64 71 and no 48.
 
 ## Inversions stuck to the key
 
-Report: an inversion stayed on the key after letting go, LOCK or not. The HiChord's rule for a
+Report: an inversion stayed on the key after letting go, LOCK or not. The chord machine's rule for a
 change sticking to a button is Chord Lock, so now a key's inversion is forgotten when the key is let
 go (or when HOLD releases it) unless the key is locked. LOCK without a joystick direction on an
 inverted key locks the plain chord with its inversion; LOCK again unlocks, and the inversion goes
@@ -136,7 +136,7 @@ the joystick direction on each of the eight direction keys.
 
 KNOB 4 was the tempo (the MODE menu's TEMPO row and tap tempo remain). Now the four knobs are the
 filter wheel, RESONANCE (new: the master SVF's damping k from the table's 1 down to 0.1, computed
-from the k = 1 coefficient table, `hcfx_coef`; also a SOUND menu row; the HiChord has it only as
+from the k = 1 coefficient table, `hcfx_coef`; also a SOUND menu row; a chord machine has it only as
 its app's CC 30), attack and release, and each turn shows its name and value in the header bar
 ("ATTACK 790ms"). KNOB 4 on an effect row still sets the amount. Preset format HCP3.
 
@@ -163,14 +163,14 @@ The chord keys moved to the seven white keys at the left (F3..E4: the first is t
 C3 as the C4 key did), and the nine white keys to their right (F4..G5) are a strumplate after the
 Omnichord's, chords left and strum right: each plays one note of the chord last built, rising from
 its root at C4, octave after octave (a triad over three octaves). A swipe strums the chord. The
-owner's first cut had the chords in the middle (C4..B4, the HiChord's) with the plate split around
+owner's first cut had the chords in the middle (C4..B4, the chord machine's) with the plate split around
 them; "the chord keys should be on the left". The DRUM pads, the loop styles and the step entry
 count from the first key too. The plate follows the chord as it changes
 and keeps the last chord once the keys are up (the piano then shows it dim, the plate note white);
 before any chord it plays the tonic's. HOLD does not latch plate notes, DRONE does not keep them;
 OCT- / OCT+ move them with the chords. The other modes (SEQ, DRUM, the games, the mixer) keep the
 keys as they were. The HOME legend marks the plate keys with a bar that rises with the note.
-hichord.c: hc_plate_of_key / hc_plate_note / hc_plate_on, tested in hichord_test plate().
+chordmachine.c: hc_plate_of_key / hc_plate_note / hc_plate_on, tested in chordmachine_test plate().
 
 ## LEAD is a scale keyboard (owner's request, 2026-10-09)
 
@@ -181,7 +181,7 @@ notes from the scale all the way up". LEAD now has no chords and no strumplate: 
 keys walk the track's scale from the tonic at C4 (an octave above the chords), one note each, wrapping
 by the scale's length (a pentatonic repeats every five keys). HOME names the note (D4) with its degree
 (seven-note scales) and shows it alone on the piano; the legend numbers every key by its degree.
-hc_lead_note in hichord.c; hc.lead_note / lead_deg carry the display. Then "i should be able to play
+hc_lead_note in chordmachine.c; hc.lead_note / lead_deg carry the display. Then "i should be able to play
 multiple notes at one time and it should display that": LEAD is polyphonic (the track POLY, not
 LEGATO), HOME names every held note low to high (D4 F4 A4) and lights them all; the piano window
 stands on the first key's octave so a note climbing the keys climbs the piano.

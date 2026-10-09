@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* The HiChord UI (firmware/src/hui.c) against the real input, drawing, sound and project code: power-on takes
+/* The chord machine UI (firmware/src/hui.c) against the real input, drawing, sound and project code: power-on takes
  * the track (its sound, CHRD HI), the three menus open and close on their buttons, SELECT moves the cursor,
  * OCT- / OCT+ change every row's value (and act on the actions), the knobs (mode, sound, filter, attack,
- * release, tempo) work on every screen, the octave buttons, tap tempo, the presets save and load the HiChord
+ * release, tempo) work on every screen, the octave buttons, tap tempo, the presets save and load the chord machine
  * state with the project, every screen draws, and HOME held / SAVE + HOME hand over to Felucca's UI and back.
  * Run by tests/run_tests.sh (needs build/gen from one firmware build). */
 #define UI_TEST_NO_MAIN 1
@@ -38,7 +38,7 @@ static int test_boot_and_menus(void)
     int bad = 0;
     track_t *t = &trk[0];
     hui_power_on();
-    bad += check("power-on: the HiChord UI is up, HOME, the track plays HiChord keys with the SAW sound",
+    bad += check("power-on: the chord machine UI is up, HOME, the track plays chord machine keys with the SAW sound",
                  hui.on && hui.screen == HU_HOME && t->p[P_CHRD] == CH_HI && hc.t[0].sound == 1u && t->eng_req == ENGI_HC &&
                  t->p[P_VOICE] == V_POLY);
     press(B_SCL);
@@ -102,7 +102,7 @@ static int test_sound_menu(void)
     bad += check("SOUND: SAW, LONG, the effects OFF", val_is(HU_SOUND, RS_SOUND, "SAW") && val_is(HU_SOUND, RS_ENV, "LONG") &&
                  val_is(HU_SOUND, RS_REV, "OFF") && val_is(HU_SOUND, RS_STEREO, "ON"));
     press(B_OCTUP);
-    bad += check("  OCT+: TRIANGLE loaded (the HICHORD engine), CHRD HI kept, its envelope", val_is(HU_SOUND, RS_SOUND, "TRIANGLE") &&
+    bad += check("  OCT+: TRIANGLE loaded (the CHORD engine), CHRD HI kept, its envelope", val_is(HU_SOUND, RS_SOUND, "TRIANGLE") &&
                  t->eng_req == ENGI_HC && t->p[P_CHRD] == CH_HI && hc.t[0].env == HE_LONG);
     turn(EN_SELECT, 1); press(B_OCTUP);
     bad += check("ENVELOPE: SHORT -> ATK 100 ms", hc.t[0].env == HE_SHORT && TIME_MS_X10[t->p[P_ATK]] / 10u >= 80u && TIME_MS_X10[t->p[P_ATK]] / 10u <= 120u);
@@ -313,7 +313,7 @@ static int test_draw_and_handover(void)
     press(B_SAVE);
     fm1_in.buttons &= ~(1u << panel.btn[B_HOME]);
     hframes(2);
-    bad += check("SAVE with HOME held: the HiChord UI again", hui.on);
+    bad += check("SAVE with HOME held: the chord machine UI again", hui.on);
     return bad;
 }
 
@@ -494,7 +494,7 @@ static int test_seq_drums_mixer(void)
     bad += check("DRUM KIT: HAND -> the engine's KIT", hc.t[0].kit == 1u && t->p[P_E0] == 1);
     press(B_HOME);
     hui_mode_set(t, HP_PLAY);
-    bad += check("back to PLAY: the sound is back (SAW on HICHORD)", t->eng_req == ENGI_HC && hc.t[0].sound == 1u);
+    bad += check("back to PLAY: the sound is back (SAW on CHORD)", t->eng_req == ENGI_HC && hc.t[0].sound == 1u);
     /* the drum loops */
     hui_mode_set(t, HP_DRUMLOOP);
     bad += check("DRUM LOOP: the DRUM engine, the loop runs", t->eng_req == ENGI_DRUM && hcs.dl_running);
@@ -647,7 +647,7 @@ static int test_fx_amount(void)
     return bad;
 }
 
-/* the HiChord's way to play over drums: the drum loop recorded into a looper layer, the live
+/* the chord machine's way to play over drums: the drum loop recorded into a looper layer, the live
  * instrument moving to the next layer, PLAY mode there: chords over the loop */
 static int test_drums_under_chords(void)
 {
@@ -735,6 +735,6 @@ int main(void)
     int bad = test_slash_first_thing() + test_boot_and_menus() + test_key_menu() + test_sound_menu() + test_mode_menu_knobs() + test_presets() +
               test_draw_and_handover() + test_looper() + test_seq_drums_mixer() + test_games() + test_live_persist() +
               test_fx_amount() + test_drums_under_chords();
-    printf("%s\n", bad ? "HUI TEST FAILED" : "hichord ui test passed");
+    printf("%s\n", bad ? "HUI TEST FAILED" : "chord machine ui test passed");
     return bad != 0;
 }

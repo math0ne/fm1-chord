@@ -1,16 +1,14 @@
-# 02 — HiChord functional reference
+# 02 — Chord machine functional reference
 
-What the Pocket Audio HiChord does, as a target for re-implementation. Compiled 2026-10-05 from the
-official Rev 2.8 BETA manual, the Rev 3.0 BETA manual, the Rev 1.4 PDF manual, the Companion App source
-(public, unminified JS with firmware-protocol comments) and strings in the public firmware binaries.
-Raw extracts are in `research/hichord/`.
+What a chord-machine style instrument does, as the target for this firmware. Compiled 2026-10-05
+from public manuals, a public companion-app source and strings in public firmware binaries. The raw
+extracts stay in `research/` (local only, not in the repo).
 
 **Corrections to common assumptions**
 
-- The HiChord is **closed source**. There is no firmware repo. The only public repo (github.com/HiChord/updater) is an Electron DFU wrapper. Everything here is behaviour observed from manuals and the app protocol, so an FM-1 port is a **clean-room re-implementation**.
+- The chord machine is **closed source**. There is no firmware repo. The only public repo (github.com/chord machine/updater) is an Electron DFU wrapper. Everything here is behaviour observed from manuals and the app protocol, so an FM-1 port is a **clean-room re-implementation**.
 - The MCU is **not a Teensy**. It is an Electro-Smith **Daisy Seed2 DFM**: STM32H750 Cortex-M7 at 400/480 MHz, PCM3060 codec, **64 MB SDRAM**, 8 MB QSPI flash. 32-bit float DSP at 48 kHz. That SDRAM is what makes its 6×20 s audio looper possible, and it is the main thing the FM-1 does not have.
-- "HI-1" does not appear in any official material. Pocket Audio only calls it HiChord. Hardware revisions are "Batch 1–5".
-- Pocket Audio claims a "patent-pending chord mapping". See the licensing note in `03-firmware-spec.md`.
+- The maker of the reference instrument claims a "patent-pending chord mapping". See the licensing note in `03-firmware-spec.md`.
 
 ## 1. Hardware
 
@@ -191,12 +189,12 @@ Per-degree chord qualities for the nine non-major scales; exact octave placement
 
 ## Sources
 
-- https://manual.hichord.shop/ (Rev 2.8 BETA manual), https://hichord.github.io/hichord-beta-updater/manual/ (Rev 3.0 BETA manual), https://images.equipboard.com/uploads/item/manual/159320/pocket-audio-hichord-manual.pdf (Rev 1.4)
-- https://updater.hichord.shop/ , https://hichord.github.io/hichord-beta-updater/ (changelogs, firmware binaries)
-- https://app.hichord.shop/ (Companion App source: `app.js`, `arp-editor.js`, `voice-cards.js`, `piano-roll.js`, `chord-visualizer-simple.js`)
-- https://github.com/HiChord/updater
-- https://hichord.shop/ , https://hichord.shop/pages/synth-enthusiasts
-- https://daisy.audio/blogs/seeds-n-circuits/daisy-in-the-wild-hichord , https://docs.daisy.audio/hardware/Seed2-DFM/
-- https://synthanatomy.com/2025/10/pocket-audio-hichord-a-pocket-sized-chord-machine.html , https://sonicstate.com/news/2025/10/20/hichord-synth-looper-chord-machine/ , https://pianoandsynth.com/hichord-the-delightful-pocket-sized-chord-synth/
-- https://www.kicktraq.com/projects/hichord/hichord-pocket-chord-synthesizer/
+- https://manual.chordmachine.shop/ (Rev 2.8 BETA manual), https://chordmachine.github.io/chordmachine-beta-updater/manual/ (Rev 3.0 BETA manual), https://images.equipboard.com/uploads/item/manual/159320/pocket-audio-chordmachine-manual.pdf (Rev 1.4)
+- https://updater.chordmachine.shop/ , https://chordmachine.github.io/chordmachine-beta-updater/ (changelogs, firmware binaries)
+- https://app.chordmachine.shop/ (Companion App source: `app.js`, `arp-editor.js`, `voice-cards.js`, `piano-roll.js`, `chord-visualizer-simple.js`)
+- https://github.com/chord machine/updater
+- https://chordmachine.shop/ , https://chordmachine.shop/pages/synth-enthusiasts
+- https://daisy.audio/blogs/seeds-n-circuits/daisy-in-the-wild-chordmachine , https://docs.daisy.audio/hardware/Seed2-DFM/
+- https://synthanatomy.com/2025/10/pocket-audio-chordmachine-a-pocket-sized-chord-machine.html , https://sonicstate.com/news/2025/10/20/chordmachine-synth-looper-chord-machine/ , https://pianoandsynth.com/chordmachine-the-delightful-pocket-sized-chord-synth/
+- https://www.kicktraq.com/projects/chordmachine/chordmachine-pocket-chord-synthesizer/
 - YouTube: BrendenAV full video manual (CUAIOcvDnLA), Blue Sirens hands-on (j_oVhePMZ0w)

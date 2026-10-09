@@ -1,14 +1,14 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* The HiChord master effects on the stereo mix, after the master level and before the limiter (fx.c
+/* The chord machine master effects on the stereo mix, after the master level and before the limiter (fx.c
  * mix_block / perf_master): the FILTER wheel (a low-pass, PF_SVF of perform.c), HI-PASS, the FLANGER
  * (SLOW JET DEEP METAL: a short modulated delay with feedback, the right channel's sweep opposite) and TAPE
  * (LOFI: fewer bits and samples; VINYL: a slow wow and crackle; TAPE: wow and flutter, a softer top).
- * hcfx holds what the live track's settings stand for (hichord.c hc_apply writes it: fx.c is compiled
- * before hichord.c). Everything bypasses bit-exactly when off: the golden renders stay. */
+ * hcfx holds what the live track's settings stand for (chordmachine.c hc_apply writes it: fx.c is compiled
+ * before chordmachine.c). Everything bypasses bit-exactly when off: the golden renders stay. */
 static struct {
     uint8_t filt, hp, flg, tape;         /* the FILTER wheel on, HI-PASS on, HFL_*, HTP_* */
-    uint8_t flg_amt;                     /* the flanger's wet amount, 64 = the HiChord's half */
+    uint8_t flg_amt;                     /* the flanger's wet amount, 64 = the chord machine's half */
     uint8_t cutoff;                      /* 0..127 -> PF_SVF index 0..63 */
     uint8_t line;                        /* OUT LEVEL LINE: -10 dB */
     uint8_t click;                       /* the metronome (hclooper.c): 1 a beat, 2 the bar's first; taken here */
@@ -69,7 +69,7 @@ static inline int16_t hcfx_q15(int32_t x) { return (int16_t)(x > 32767 ? 32767 :
 
 /* one channel of the state-variable filter (k = 1) at Q21: x Q15 in (up to +-2^17: the chain before
  * master_out), Q15 out. perform.c's pf_svf runs at Q13 (>> 2 in, >> 14 truncation), which is fine
- * after Felucca's master level, but the HiChord wheel sits in the master chain at every MASTER
+ * after Felucca's master level, but the chord machine wheel sits in the master chain at every MASTER
  * setting: at a low one the signal is a few hundred LSB and the Q13 truncation hiss follows the
  * wheel. Int64 products, rounded; the states stay within +-2^24. */
 static inline int32_t hc_svf(int32_t x, int32_t *z, const int16_t *c, int hp)

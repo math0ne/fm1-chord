@@ -343,7 +343,7 @@ static void mix_part(track_t *t, uint32_t n)
             side_s[i] = (((a - c) >> 1) * 23) >> 5;
         }
     if (trk_hc[t - trk] && ENGINES[t->engine] != &ENG_PHYS)   /* the chord layer: 6 dB down. Up to eight voices of a chord
-                                                         * at once (the HiChord's eight oscillators) sum to four
+                                                         * at once (the chord machine's eight oscillators) sum to four
                                                          * times full scale; this keeps a full chord clean with the
                                                          * MASTER at half */
         for (i = 0; i < n; i++) {
@@ -391,7 +391,7 @@ static void mix_part(track_t *t, uint32_t n)
 }
 
 /* the master with the FX layer's effects between its level and master_out (perform.c) */
-#include "hcfx.c"                                       /* fm1-chord: the HiChord master effects (hc_master) */
+#include "hcfx.c"                                       /* fm1-chord: the chord machine master effects (hc_master) */
 static __attribute__((noinline)) void perf_master(int32_t *out, uint32_t n)
 {
     uint32_t i;

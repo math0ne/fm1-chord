@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* Screens of the HiChord layer as the device draws them (the real UI code on the stub display): HOME with a
+/* Screens of the chord machine layer as the device draws them (the real UI code on the stub display): HOME with a
  * chord held, the CHORD page. Writes PPMs (tests/ui_render.py style: convert with Pillow).
- *   build/host/hichord_shot OUTDIR
- *   cc -O1 -w -Ibuild/gen -Ifirmware/src -o build/host/hichord_shot tests/hichord_shot.c -lm */
+ *   build/host/chordmachine_shot OUTDIR
+ *   cc -O1 -w -Ibuild/gen -Ifirmware/src -o build/host/chordmachine_shot tests/chordmachine_shot.c -lm */
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
 

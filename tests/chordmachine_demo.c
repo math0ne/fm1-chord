@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* A HiChord progression rendered through the real keys, voices and FX to a WAV, to hear the layer without
+/* A chord machine progression rendered through the real keys, voices and FX to a WAV, to hear the layer without
  * hardware: C major on ANALOG STRINGS with BASS ROOT and VOICES 8; chord keys and modifier keys pressed on
  * the simulated keyboard, as a player would (a direction held before or after the chord key, INVERT, HOLD).
- *   build/host/hichord_demo OUT.wav
+ *   build/host/chordmachine_demo OUT.wav
  * Built by hand (tests/run_tests.sh does not need it):
- *   cc -O1 -w -Ibuild/gen -Ifirmware/src -o build/host/hichord_demo tests/hichord_demo.c -lm */
+ *   cc -O1 -w -Ibuild/gen -Ifirmware/src -o build/host/chordmachine_demo tests/chordmachine_demo.c -lm */
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
 
@@ -53,13 +53,13 @@ int main(int argc, char **argv)
     int32_t o[2 * CTL], peak = 0;
     FILE *w;
     if (argc < 2) {
-        fprintf(stderr, "usage: hichord_demo OUT.wav\n");
+        fprintf(stderr, "usage: chordmachine_demo OUT.wav\n");
         return 2;
     }
     ui_power_on();
     hc_init();
     usb.config = 1;
-    host_preset(&trk[0], ENGI_HC, 4);                               /* the CHORD engine: E.PIANO (2-op FM, as the HiChord) */
+    host_preset(&trk[0], ENGI_HC, 4);                               /* the CHORD engine: E.PIANO (2-op FM, as the chord machine) */
     trk[0].p[P_VOICE] = V_POLY;
     trk[0].p[P_SCALE] = 1;                                          /* C major */
     trk[0].p[P_ROOT] = 0;
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
             printf("%5u ms  %s\n", ms, hc.name);
     }
     fclose(w);
-    printf("hichord_demo: %u ms, peak %d (%.1f dBFS), %u voices at most -> %s\n", ms_total, peak,
+    printf("chordmachine_demo: %u ms, peak %d (%.1f dBFS), %u voices at most -> %s\n", ms_total, peak,
            20.0 * log10((double)(peak ? peak : 1) / 32767.0), busy_max, argv[1]);
     return 0;
 }

@@ -1,26 +1,26 @@
-# 03 — Firmware spec: HiChord-style chord instrument on the M-VAVE FM-1
+# 03 — Firmware spec: chord-machine style chord instrument on the M-VAVE FM-1
 
 Working name: `fm1-chord`. A Felucca fork that keeps Felucca's hardware layer, loader, storage, USB-MIDI
-and FX, and replaces the instrument and UI with a HiChord-style chord-button paradigm.
+and FX, and replaces the instrument and UI with a chord-machine style chord-button paradigm.
 
 Status: specification, nothing built. Everything below is scoped to what the FM-1 can actually do;
-Section 9 lists where fidelity to the HiChord is reduced and why.
+Section 9 lists where fidelity to the chord machine is reduced and why.
 
 ## 1. Goals and non-goals
 
-**Goal.** Play the HiChord way on the FM-1: press one key, get the right diatonic chord in the current
+**Goal.** Play the chord machine way on the FM-1: press one key, get the right diatonic chord in the current
 key and scale; modify it momentarily with a second gesture; strum, arpeggiate, drone, repeat, sequence
 and loop it; all of it as USB-MIDI notes too.
 
 **Non-goals.** Mic features (vocoder, tuner, mic sampler), USB audio in phase 1, BLE-MIDI, TRS MIDI out
-(the FM-1 has no TX), bit-exact HiChord sound. Not a HiChord emulator; a HiChord-paradigm instrument
+(the FM-1 has no TX), bit-exact chord machine sound. Not a chord machine emulator; a chord machine-paradigm instrument
 built on FM-1 strengths (bigger screen, more keys, seven encoders, Felucca's engines).
 
 ## 2. Base and licensing
 
 - **Base**: fork [hugelton/Felucca](https://github.com/hugelton/Felucca) at the latest tag (1.0.1 on 2026-10-05), the way X0X did: keep `firmware/hal/`, `loader/`, `usb.c`, `storage*.c`, `ota*.c`, `settings_persist.c`, `gfx.c`, `lcd.c`, `panel.c`, `fx.c`, `dsp.c`, `voice.c`, `mod.c`, `midi_*.c`, and the engines you want; replace `ui*.c`, `engines.c` selection, `seq.c`, `song_chain.c`, `perform.c`, `chord.c`.
 - **License**: Felucca is GPL-3.0-only, so this firmware is GPL-3.0. Fine for a free release.
-- **HiChord IP**: the firmware is closed and Pocket Audio claims a patent-pending chord mapping. Everything here is re-implemented from the public manual and the public companion-app protocol. Do not copy their firmware binaries, samples, sound names, or UI artwork into the repo. Degree-to-button chord playing itself has prior art going back decades (Omnichord, Suzuki QChord, Casio Chordana), but if this becomes public, keep the naming distinct and do not call it a HiChord clone.
+- **Reference instrument IP**: its firmware is closed and its maker claims a patent-pending chord mapping. Everything here is re-implemented from public manuals and a public companion-app protocol. Do not copy any firmware binaries, samples, sound names, or UI artwork into the repo. Degree-to-button chord playing has prior art going back decades (Omnichord, Suzuki QChord, Casio Chordana); keep the naming distinct.
 - **Upstream etiquette**: Felucca issues are open; keep the `hal/` untouched so upstream fixes merge cleanly, and mirror `ENGINES[]` indices ("append, never reorder").
 
 ## 2a. What Felucca already covers versus what this fork adds
@@ -33,7 +33,7 @@ overdub and motion recording, song chain A–D, MONO / LEGATO / UNISON with glid
 matrix, chorus / delay / reverb sends, per-track distortion, limiter, performance FX (repeat, reverse,
 filter sweeps, tape stop, freeze, harmonizer), an 8-lane drum engine, 13 sound engines, 32 presets and
 4 projects, USB + TRS MIDI in with clock. Set `CHRD` = sevenths, `QNT` = WHITE, `VOIC` = BASS and you can
-already play HiChord-style diatonic chords.
+already play chord-machine style diatonic chords.
 
 What this fork adds, in order of musical importance:
 
@@ -45,21 +45,21 @@ What this fork adds, in order of musical importance:
 6. **Six-track event looper** with a sound snapshot per track. Felucca records into one 64-step pattern per track.
 7. **Degree-based chord sequencer** steps that re-harmonise on key change (thin layer over Felucca's sequencer).
 8. **Drum loops** (56 patterns, data only) and auto-drum retrigger.
-9. **UI rewrite**: HiChord home screen, three-menu structure, gesture combos. Largest by line count, smallest by risk.
+9. **UI rewrite**: chord machine home screen, three-menu structure, gesture combos. Largest by line count, smallest by risk.
 10. **Games and randomize** (Chord Hiro, Ear Trainer): pure UI over the harmony module.
 
-Roughly 70 % of HiChord functionality exists in Felucca in some form. Item 1 is what makes it feel like a
-HiChord and is about a thousand lines plus tables; items 6 and 9 are where the hours go.
+Roughly 70 % of chord machine functionality exists in Felucca in some form. Item 1 is what makes it feel like a
+chord machine and is about a thousand lines plus tables; items 6 and 9 are where the hours go.
 
 ## 3. Control mapping
 
-The FM-1 has 27 keys, 14 buttons, 7 encoders, a volume pot and a 240×240 colour screen. The HiChord has 7 chord buttons, 3 menu buttons, an 8-way joystick with click, and a wheel. The mapping below keeps every HiChord gesture reachable with the same number of hands.
+The FM-1 has 27 keys, 14 buttons, 7 encoders, a volume pot and a 240×240 colour screen. The chord machine has 7 chord buttons, 3 menu buttons, an 8-way joystick with click, and a wheel. The mapping below keeps every chord machine gesture reachable with the same number of hands.
 
 ### 3.1 The 27 keys
 
 **White keys = chord buttons (scale degrees).** The physical layout is a piano, so make C4 degree 1 and
 let the octave fall out of position. This gives 16 chord keys spanning two octaves and replaces the
-HiChord's per-button octave feature with geometry.
+chord machine's per-button octave feature with geometry.
 
 | Key | F3 | G3 | A3 | B3 | C4 | D4 | E4 | F4 | G4 | A4 | B4 | C5 | D5 | E5 | F5 | G5 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -67,7 +67,7 @@ HiChord's per-button octave feature with geometry.
 | Octave | −1 | −1 | −1 | −1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | +1 | +1 | +1 | +1 | +1 |
 
 Degree is *always* relative to the selected key (C4 plays the I chord in any key), exactly like
-HiChord button 1. A second layout, **PIANO**, where the white key's own letter name is the root and the
+chord machine button 1. A second layout, **PIANO**, where the white key's own letter name is the root and the
 quality comes from the key/scale, is a setting for people who think in note names. Key LEDs show the
 degree colour (I/IV/V one colour, ii/iii/vi another, vii° a third) in DEGREE layout.
 
@@ -86,14 +86,14 @@ modifier tables in `04-chord-engine-tables.md` apply unchanged. Behaviour:
 - Two modifiers held at once: the most recent wins (joystick can only point one way).
 - **INVERT** (F#3): tap while a chord key is held cycles that key's inversion Root → 1st → 2nd. Stored per key in the preset.
 - **LOCK** (G#3): tap while a chord key + modifier are held locks the modification into that key ("LOCKED" on screen). Tap again with the key held to unlock. Locked chords are pinned to the key they were locked in (3.0 behaviour).
-- **HOLD** (A#3): sustain latch. Not a HiChord feature but the FM-1 has the key and it makes one-handed modifier play possible. Off by default in presets.
-- **Slash chords**: with Bass = SLASH, the first held chord key is the bass, the second is the chord, as on the HiChord.
+- **HOLD** (A#3): sustain latch. Not a chord machine feature but the FM-1 has the key and it makes one-handed modifier play possible. Off by default in presets.
+- **Slash chords**: with Bass = SLASH, the first held chord key is the bass, the second is the chord, as on the chord machine.
 
 ### 3.2 The 14 buttons
 
 Felucca logical names (physical silkscreen may differ; use Felucca's panel calibration if a button is in the wrong place).
 
-| Felucca name | HiChord equivalent | Function |
+| Felucca name | chord machine equivalent | Function |
 |---|---|---|
 | HOME | — | Play screen. Press again toggles the big-chord view and the piano-roll view. |
 | SCL | Gray | Key & scale menu. Hold + encoder: key / scale / octave. |
@@ -109,7 +109,7 @@ Felucca logical names (physical silkscreen may differ; use Felucca's panel calib
 | REC | joystick click (track) | Looper: arm → record → loop → off cycle on the selected track. Hold 0.7 s = clear track. |
 | OCT− / OCT+ | Gray + U/D | Global octave −2…+2. Both together = randomize (sound in FX menu, all in SCL menu, pattern in EDIT menu). |
 
-Hold-gesture equivalents of HiChord combos: SCL + ENC = key; EDIT + white key = quick mode (Play, Strum, Lead, Drone, Arp, Repeat, Drum); FX + white key = quick sound 1–7; SCL + EDIT = battery; SCL + EDIT held 5 s = factory reset; SCL + FX + EDIT held 5 s = enter Felucca's update loader.
+Hold-gesture equivalents of chord machine combos: SCL + ENC = key; EDIT + white key = quick mode (Play, Strum, Lead, Drone, Arp, Repeat, Drum); FX + white key = quick sound 1–7; SCL + EDIT = battery; SCL + EDIT held 5 s = factory reset; SCL + FX + EDIT held 5 s = enter Felucca's update loader.
 
 ### 3.3 Encoders and pot
 
@@ -118,13 +118,13 @@ Hold-gesture equivalents of HiChord combos: SCL + ENC = key; EDIT + white key = 
 | SELECT | select looper track 1–6 | navigate list / change value |
 | ALGORITHM | play mode (Play, Strum, Lead, Drone, Arp, Repeat, Seq, Drum, Drum Loop, Mixer, games) | mode parameter (strum speed, arp rate, difficulty) |
 | PRESETS | sound (the 39-ish list) | sound |
-| KNOB 1 | filter cutoff (HiChord Red + wheel) | context |
+| KNOB 1 | filter cutoff (chord machine Red + wheel) | context |
 | KNOB 2 | attack | context |
 | KNOB 3 | release | context |
 | KNOB 4 | BPM | context |
 | Master pot | volume (hardware) | volume |
 
-Encoders have no push; everything the HiChord does with "click" lives on REC/PLAY/OCT±.
+Encoders have no push; everything a chord machine does with "click" lives on REC/PLAY/OCT±.
 
 ### 3.4 Display (240×240)
 
@@ -135,7 +135,7 @@ Home screen regions, drawn with Felucca's strip canvas:
 - Lower band (160–200): a 2-octave piano strip with sounding notes highlighted and the bass note marked.
 - Bottom band (200–240): six looper track glyphs (empty outline / armed / recording / playing / muted), sequencer position when running.
 
-Menus are full-height lists, 7 rows visible. Every menu times out to Home after 3 s of no input (HiChord behaviour).
+Menus are full-height lists, 7 rows visible. Every menu times out to Home after 3 s of no input (chord machine behaviour).
 
 ## 4. Architecture
 
@@ -148,19 +148,19 @@ Menus are full-height lists, 7 rows visible. Every menu times out to Home after 
 | `audio.c`, `voice.c`, `mod.c`, `dsp.c`, `fx.c` | keep + small changes (§4.3) | render, allocation, buses |
 | `eng_analog.c`, `eng_fm6.c`, `eng_sample.c`, `eng_drum.c`, `drum_voice.c`, `eng_noise.c`, `eng_phys.c` | keep | sound sources |
 | `eng_fm2.c` | new | cheap 2-op FM for the EPIANO/BELL/ORGAN/BRASS family |
-| `eng_chord.c` | new | thin wrapper engine that owns a sound preset = {source engine, bass-slot wave, stereo detune} so one "sound" can use different waves on the bass slot like the HiChord |
+| `eng_chord.c` | new | thin wrapper engine that owns a sound preset = {source engine, bass-slot wave, stereo detune} so one "sound" can use different waves on the bass slot like the chord machine |
 | `harmony.c` | new | scales, chord types, modifier tables, voicing, inversions, voice leading, naming (data in `04`) |
 | `chordkb.c` | new | key layout, modifier/INVERT/LOCK/HOLD gestures, slash logic, per-key octave and inversion state; emits chord events |
 | `play_modes.c` | new | Play, Strum, Lead, Drone, Repeat state machines on top of chord events |
-| `carp.c` | new | chord arpeggiator with HiChord pattern struct |
+| `carp.c` | new | chord arpeggiator with chord machine pattern struct |
 | `cseq.c` | new (replaces `seq.c`) | 16-step chord sequencer |
 | `eloop.c` | new | 6-track event looper |
 | `drumloop.c` | new | 56 beat patterns, auto-drum retrigger |
 | `mixer.c` | new | track mute/solo/volume, metronome |
 | `games.c` | new, phase 4 | Chord Hiro, Ear Trainer |
 | `ui_*.c` | rewrite | screens above |
-| `midi_control.c` | modify | HiChord CC map, chord-note output, per-track channels |
-| `preset.c` | new | HiChord-style preset = full state snapshot |
+| `midi_control.c` | modify | chord machine CC map, chord-note output, per-track channels |
+| `preset.c` | new | chord-machine style preset = full state snapshot |
 
 ### 4.2 Data flow
 
@@ -177,8 +177,8 @@ chord events, so the looper, sequencer and MIDI output never re-derive harmony.
 
 ### 4.3 Required changes to Felucca core
 
-1. **Stereo partner voices.** HiChord width comes from each voice having a detuned, opposite-panned twin. Felucca UNISON already spreads fine detune; add an optional per-voice pan (`voice_t.pan`, Q15) applied in `track_render` and a `P_UPAN` spread parameter so UNISON×2 pans ±. Partner = Felucca unison voice. Cost: one multiply per sample per voice.
-2. **Voice budget.** `NVOICE 8 → 16` shared. HiChord's full chord is 6 slots × 2 = 12 voices; the looper needs more. The 85 % shedding stays and is the safety net. Measure before raising further.
+1. **Stereo partner voices.** chord machine width comes from each voice having a detuned, opposite-panned twin. Felucca UNISON already spreads fine detune; add an optional per-voice pan (`voice_t.pan`, Q15) applied in `track_render` and a `P_UPAN` spread parameter so UNISON×2 pans ±. Partner = Felucca unison voice. Cost: one multiply per sample per voice.
+2. **Voice budget.** `NVOICE 8 → 16` shared. chord machine's full chord is 6 slots × 2 = 12 voices; the looper needs more. The 85 % shedding stays and is the safety net. Measure before raising further.
 3. **Parts.** `NPART 4 → 7`: six looper/live tracks plus a fixed drum part. `track_t` grows linearly; it is a few KB each, well within the 336 KiB pool.
 4. **Tempo-synced tremolo and flanger** in `fx.c` (chorus exists; flanger is the chorus delay line with shorter range and feedback). Reverb HALL/PLATE/AMBIENT = parameter sets over the existing room and spring algorithms, not new algorithms.
 5. **Per-track MIDI channel** = track index + 1, drums on 10, fixed velocity 100 on output.
@@ -232,7 +232,7 @@ Flash: Felucca 1.0.1 fits the 568 KiB app window with 13 engines; drop the engin
 
 Pattern struct and built-ins from `04 §9`. Rates from `04`. Clock source: internal BPM or incoming MIDI
 clock. Each arp step emits a note event on the track with slot role so MIDI output and the looper see
-it. Editable via a SysEx command mirroring HiChord `0A/0B` so the existing Companion App arp editor
+it. Editable via a SysEx command mirroring chord machine `0A/0B` so the existing Companion App arp editor
 could drive it (optional).
 
 ### 5.5 Sequencer (`cseq.c`)
@@ -240,11 +240,11 @@ could drive it (optional).
 16 steps max (start at 4; KNOB 4 or ENC changes length in steps of 4). Step = {degree, octave, type,
 root offset, inversion, bass mode, length in beats}. Record by pressing white keys (and modifiers) on the
 step; SEQ + PLAY runs it; leaving the mode while running bounces it to the next empty looper track
-(HiChord behaviour). Sends MIDI.
+(chord machine behaviour). Sends MIDI.
 
 ### 5.6 Event looper (`eloop.c`)
 
-Replaces the HiChord's audio looper with a six-track **event** looper, which the FM-1 can afford. Each
+Replaces the chord machine's audio looper with a six-track **event** looper, which the FM-1 can afford. Each
 track = one part with its own sound snapshot (engine, preset, envelope, FX sends) and a list of
 timestamped chord/note events.
 
@@ -257,22 +257,22 @@ timestamped chord/note events.
 
 ### 5.7 Drums (`drumloop.c`, Felucca `eng_drum`)
 
-Drum part is fixed (part 7). Seven pads on white keys with Felucca/SLOOP kits remapped to the HiChord
+Drum part is fixed (part 7). Seven pads on white keys with Felucca/SLOOP kits remapped to the chord machine
 pad order (Kick, Kick alt, Snare, CHH, Tom, Bell, OHH). Auto-drum: hold pad + black key rate. Drum Loop
 mode: white key = style, OCT± = variation, SELECT = kit, REC = bounce one bar to a looper track. GM
 notes out on channel 10.
 
 ### 5.8 Sounds and FX
 
-- Sound list: one `sound_t` per entry = {source engine, engine params, bass-slot wave override, stereo detune cents, envelope preset, default FX}. Ship ~30 entries covering the HiChord categories (basic waves, 2-op FM family, sampled instruments from whatever samples you record or license yourself, hybrids). Felucca's three 80 KiB ADPCM sample slots limit how many sampled instruments ship in flash; most can be FM or analog.
+- Sound list: one `sound_t` per entry = {source engine, engine params, bass-slot wave override, stereo detune cents, envelope preset, default FX}. Ship ~30 entries covering the chord machine categories (basic waves, 2-op FM family, sampled instruments from whatever samples you record or license yourself, hybrids). Felucca's three 80 KiB ADPCM sample slots limit how many sampled instruments ship in flash; most can be FM or analog.
 - Global ADSR with the seven presets; KNOB 2/3 = attack/release.
 - Filter: LP cutoff + resonance (Felucca per-track filter), separate HP toggle.
 - FX menu: Reverb mode, Delay rate, Chorus mode, Flanger mode, Tremolo rate, LFO, Glide, Drive (Felucca DIST), Stereo, Bass, V.LEAD, Voice Count, Scale, Joystick (modifier) mode, Speaker, MIDI in/out, Layout (DEGREE/PIANO).
-- CPU discipline copied from HiChord: a soft rule table (reverb refuses with delay + flanger while a drum loop plays, etc.) plus Felucca's hard shedding. Show "FX LIMIT" rather than glitch.
+- CPU discipline copied from chord machine: a soft rule table (reverb refuses with delay + flanger while a drum loop plays, etc.) plus Felucca's hard shedding. Show "FX LIMIT" rather than glitch.
 
 ### 5.9 Presets
 
-Eight slots (HiChord has four). A preset is the complete state: sound, FX, key, scale, octave, mode,
+Eight slots (chord machine has four). A preset is the complete state: sound, FX, key, scale, octave, mode,
 arp pattern, per-key inversions and locks, cutoff, kit, sequencer pattern, layout. Stored through
 Felucca's `storage.c` in the VM area. Randomize: sound / all / pattern.
 
@@ -311,12 +311,12 @@ Phase 1 is the proof that the paradigm works on this keyboard; everything else i
 | CPU for six looper tracks with distinct sounds | Voice Count default 4 on looper tracks; cheap engines by default; shedding; cpu1 offload as a phase-4 research item |
 | Toolchain is closed (JieLi clang 4.0.1) | Felucca's `get_toolchain.sh`; keep a copy of the toolchain archive |
 | Upstream Felucca moves fast (daily pushes, 24 open issues) | Fork at a tag; keep `hal/` pristine; rebase monthly at most |
-| Non-major-scale chord tables are assumptions | Verify against the real HiChord when it arrives, or accept the diatonic harmonisation as the design |
+| Non-major-scale chord tables are assumptions | Verify against the real chord machine when it arrives, or accept the diatonic harmonisation as the design |
 | Patent claim on chord mapping | Private project; if published, distinct naming and prior-art note |
 
-## 9. Fidelity gaps versus the HiChord
+## 9. Fidelity gaps versus the chord machine
 
-| HiChord feature | FM-1 version | Reason |
+| chord machine feature | FM-1 version | Reason |
 |---|---|---|
 | 6 × 20 s audio looper | 6-track event looper with per-track sound snapshots | 578 KB SRAM vs 64 MB SDRAM |
 | 12 oscillators at 48 kHz float | 16 Q15 fixed-point voices at 44.1 kHz | pi32v2 at 240 MHz, single core in use |

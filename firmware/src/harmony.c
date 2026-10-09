@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* HiChord-style harmony: a scale degree of the track's ROOT / SCALE becomes a chord (its default
+/* chord-machine style harmony: a scale degree of the track's ROOT / SCALE becomes a chord (its default
  * quality: the triad stacked on that degree), a modifier (one of eight directions in one of five
  * tables) reshapes it, and the result is voiced into six slots: ROOT, THIRD, FIFTH, BASS, EXT1, EXT2.
- * Pure functions over small tables: no state, no hardware. Included by hichord.c. Tables and the
+ * Pure functions over small tables: no state, no hardware. Included by chordmachine.c. Tables and the
  * choices marked (assumption) are in spec/docs/04-chord-engine-tables.md. */
 
 /* chord qualities: the persisted index (locks, presets): append, never reorder */
@@ -56,7 +56,7 @@ static int hq_dimlike(uint32_t q) { return HQ_IV[q % HQ_COUNT][1] == 3 && HQ_IV[
 static uint32_t hq_flip(uint32_t q) { return hq_minor(q) ? HQ_MAJ : HQ_MIN; }
 
 /* ------------------------------------------------------- modifiers --- */
-enum { HM_DEFAULT, HM_EXTEND, HM_CHROM, HM_BORROW, HM_OG, HM_COUNT };   /* the joystick mode (HiChord CC 23) */
+enum { HM_DEFAULT, HM_EXTEND, HM_CHROM, HM_BORROW, HM_OG, HM_COUNT };   /* the joystick mode (chord machine CC 23) */
 enum { HD_UP, HD_UR, HD_RIGHT, HD_DR, HD_DOWN, HD_DL, HD_LEFT, HD_UL, HD_NONE };   /* clockwise from up */
 static const char *const HM_NAME[HM_COUNT] = {"DEFAULT", "EXTEND", "CHROM", "BORROW", "OG"};
 static const char *const HD_ARROW[8] = {"\x18", "\x18\x1A", "\x1A", "\x19\x1A", "\x19", "\x19\x1B", "\x1B", "\x18\x1B"};
@@ -132,7 +132,7 @@ static uint32_t hs_degrees(uint32_t mask, uint8_t *deg)
  * tonic in semitones (*root) and the default quality: the triad stacked on it in scale steps. Scales of
  * fewer than seven notes that have a fifth (the pentatonics, blues): the roots walk the scale, the triads
  * come from its parent seven-note scale, major or natural minor by the scale's third (assumption: the
- * HiChord's own tables for these are not published) */
+ * chord machine's own tables for these are not published) */
 static uint32_t hs_degree_chord(uint32_t mask, uint32_t d, int32_t *root)
 {
     uint8_t deg[12], pdeg[12];
@@ -187,7 +187,7 @@ static uint32_t hs_degree_of(uint32_t mask, uint32_t tonic, uint32_t pc)
 
 /* ----------------------------------------------------------- voicing --- */
 enum { HS_ROOT, HS_THIRD, HS_FIFTH, HS_BASS, HS_EXT1, HS_EXT2, HS_N };   /* the six voice slots */
-enum { HV_8, HV_4, HV_2, HV_1 };                         /* VOICES (HiChord CC 49): 8 4 2 1 */
+enum { HV_8, HV_4, HV_2, HV_1 };                         /* VOICES (chord machine CC 49): 8 4 2 1 */
 static const char *const HV_NAME[4] = {"8", "4", "2", "1"};
 
 typedef struct {

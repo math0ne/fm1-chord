@@ -324,7 +324,7 @@ static void graph_chord(const track_t *t, uint16_t c)
     }
     if (trk_vmode(t) != V_POLY)
         cap = "ROOT ONLY";                              /* MONO / LEGATO / UNISON */
-    if (chord_last[k].n && chord_last[k].name[0])       /* CH_HI: its own name (hichord.c) */
+    if (chord_last[k].n && chord_last[k].name[0])       /* CH_HI: its own name (chordmachine.c) */
         str_cpy(b, chord_last[k].name, 12);
     else
         chord_name(b, (uint32_t)r, mask);

@@ -1,16 +1,16 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* The HiChord's SEQUENCER, DRUM and DRUM LOOP modes.
+/* The chord machine's SEQUENCER, DRUM and DRUM LOOP modes.
  *   SEQUENCER  up to 16 chord steps of a beat each on the live track: a white key writes the step at the
  *              cursor (its degree, its octave, the direction held with it) and sounds it; F#3 writes a rest;
  *              the cursor moves on. PLAY runs it round (hui.c); the steps' chords are built as the keys'
  *              are, so the key, the scale, BASS, VOICES and the joystick table apply as they are now.
- *   DRUM       the white keys are seven pads (KICK, KICK 2, SNARE, HAT CL, TOM, BELL, HAT OP: the HiChord's
+ *   DRUM       the white keys are seven pads (KICK, KICK 2, SNARE, HAT CL, TOM, BELL, HAT OP: the chord machine's
  *              order, General MIDI notes on Felucca's DRUM engine); a direction held with a pad repeats it
  *              at that rate (AUTO-DRUM). The engine switch is the UI's (hui.c hui_mode_set).
  *   DRUM LOOP  7 styles x 8 variations of 16 sixteenths over 6 lanes; a white key picks the style and starts
  *              it, PLAY stops and starts it. The notes go through hc_note_on: the looper records them.
- * Included by hichord.c after the play modes; runs in the audio ISR (hcs_tick from hc_tick). */
+ * Included by chordmachine.c after the play modes; runs in the audio ISR (hcs_tick from hc_tick). */
 static const uint8_t HC_PAD_NOTE[7] = {36, 35, 38, 42, 45, 56, 46};
 static const char *const HC_PAD_NAME[7] = {"KICK", "KICK 2", "SNARE", "HAT CL", "TOM", "BELL", "HAT OP"};
 static const uint8_t HC_LANE_NOTE[6] = {36, 38, 42, 45, 46, 49};   /* the loops' lanes: kick snare hat tom open cymbal */
@@ -237,7 +237,7 @@ static void hcd_loop_release(track_t *t)
 static void hcs_mode_left(track_t *t)                  /* a mode change: what ran stops (a bounce plays on) */
 {
     if (hcs.running && hc_of(t)->play == HP_SEQ && !hcl.len && hcl.l[trk_index(t)].state == HLS_OFF && trk_index(t) == hcl_live()) {
-        hcl.bars = (uint8_t)((hcs.len + 3u) / 4u);     /* the HiChord: leaving the sequencer bounces it to the looper */
+        hcl.bars = (uint8_t)((hcs.len + 3u) / 4u);     /* the chord machine: leaving the sequencer bounces it to the looper */
         hcl.sel = (uint8_t)trk_index(t);
         hcl_rec_press();
         hcl_rec_press();

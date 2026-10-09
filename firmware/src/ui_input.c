@@ -675,13 +675,13 @@ static void ui_notices(void)
     }
 }
 
-static int hui_active(void);                       /* hui.c (fm1-chord): the HiChord UI is up */
+static int hui_active(void);                       /* hui.c (fm1-chord): the chord machine UI is up */
 static void hui_input(void);
 static void hui_resume(void);
 static void ui_input(void)
 {
     uint32_t pressed, notes, now, id, b, k;
-    if (hui_active()) {                                 /* the HiChord UI (hui.c) */
+    if (hui_active()) {                                 /* the chord machine UI (hui.c) */
         hui_input();
         return;
     }
@@ -689,7 +689,7 @@ static void ui_input(void)
     notes = fm1_input_note_edges();
     now = fm1_ticks();
     if (((fm1_in.buttons >> panel.btn[B_HOME]) & 1u) && ((pressed >> panel.btn[B_SAVE]) & 1u)) {
-        hui_resume();                                   /* SAVE with HOME held: back to the HiChord UI */
+        hui_resume();                                   /* SAVE with HOME held: back to the chord machine UI */
         return;
     }
     uint32_t home = btn_hold(&ui.home_t0, B_HOME, now, 1);

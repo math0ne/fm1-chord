@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* The HiChord key layer (firmware/src/hichord.c, harmony.c; CHRD HI) against the real keyboard, voice and MIDI
- * code: the degrees of the DEGREE layout, the HiChord manual's key-of-C examples for every direction of the
+/* The chord machine key layer (firmware/src/chordmachine.c, harmony.c; CHRD HI) against the real keyboard, voice and MIDI
+ * code: the degrees of the DEGREE layout, the chord machine manual's key-of-C examples for every direction of the
  * DEFAULT, EXTEND, CHROM and BORROW tables, a direction pressed before or after the chord key and let go
  * (revoicing: the notes that stay keep sounding), INVERT, LOCK, HOLD, BASS ROOT / SLASH, VOICES, VOICE
  * LEADING, the PIANO layout, every scale, MONO plays the root, releases end exactly what a key started,
@@ -687,6 +687,6 @@ static int stereo_master(void)
 int main(void)
 {
     int bad = degrees() + tables() + keys() + plate() + gestures() + bass_voices_leading() + midi_in_steps() + play_modes() + stereo_master();
-    printf("%s\n", bad ? "HICHORD TEST FAILED" : "hichord keys test passed");
+    printf("%s\n", bad ? "CHORD MACHINE TEST FAILED" : "chord machine keys test passed");
     return bad != 0;
 }

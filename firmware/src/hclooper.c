@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 fm1-chord contributors */
-/* The HiChord looper, as an event looper: each layer is one of Felucca's parts (its own sound), and holds
+/* The chord machine looper, as an event looper: each layer is one of Felucca's parts (its own sound), and holds
  * the notes that were played on it (after the play mode: a strum's roll, an arp's steps) with their time in
  * the loop. The first layer sets the loop's length (free: the second REC press, rounded to a beat; or 1..8
  * bars with BARS); the next layers record from the loop's start for one loop. A layer's states: OFF ->
  * ARMED (BARS can be set) -> REC -> PLAY -> OFF, REC held: cleared. The live instrument is the lowest layer
  * that is not playing yet (the UI moves song.sel there, hui.c); once every layer plays, the last one is
  * both. PLAY pauses / resumes the transport. A metronome clicks on the beats while recording (hcfx.c).
- * Included by hichord.c; runs in the audio ISR (hcl_tick from hc_tick). */
+ * Included by chordmachine.c; runs in the audio ISR (hcl_tick from hc_tick). */
 #define HCL_LAYERS NTRK
 #define HCL_EVENTS 160u                                  /* 80 notes a layer; 2.5 KB in the pool */
 enum { HLS_OFF, HLS_ARMED, HLS_REC, HLS_PLAY };

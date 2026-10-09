@@ -22,7 +22,7 @@
 #if FELUCCA_SLICE
 #include "eng_slice.c"
 #endif
-#include "eng_hc.c"             /* HICHORD: the HiChord's voice (fm1-chord) */
+#include "eng_hc.c"             /* CHORD: a chord machine's voice (fm1-chord) */
 
 /* the editor protocol, user presets and projects store these indices: append, never reorder */
 static const engine_t *const ENGINES[NENGINES] = {
@@ -66,7 +66,7 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
 #if FELUCCA_SLICE
     13,                          /* SLICE */
 #endif
-    ENGI_HC,                     /* HICHORD */
+    ENGI_HC,                     /* CHORD */
     10,                          /* DRUM */
 };
 
