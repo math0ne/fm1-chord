@@ -277,12 +277,15 @@ static int plate(void)
     key_up(K_P0);
     song.octave = 0;
     hc_play_set(t, HP_LEAD);                           /* LEAD: the scale over all the white keys from C4, no plate */
+    hc.t[0].bass = HB_SLASH;                           /* (SLASH is for chords: in LEAD every key keeps its note) */
     key_down(K_VI);
     bad += check("LEAD: the sixth key plays A4 alone (the scale from the tonic at C4), its degree vi",
                  gate_note(t, 69) && ngated(t) == 1u && hc.lead_note == 70u && hc.lead_deg == 5u);
     key_down(K_P1);
-    bad += check("  the ninth key: D5 (the scale goes on: no plate in LEAD)", gate_note(t, 74) && ngated(t) == 1u && hc_plate_of_key(t, K_P1) < 0);
+    bad += check("  the ninth key with it: D5 (the scale goes on: no plate in LEAD), both sound", gate_note(t, 74) && gate_note(t, 69) &&
+                 ngated(t) == 2u && hc_plate_of_key(t, K_P1) < 0);
     key_up(K_P1); key_up(K_VI);
+    hc.t[0].bass = HB_OFF;
     t->p[P_SCALE] = 5;                                 /* C major pentatonic: five notes an octave */
     key_down(K_VI);
     bad += check("  pentatonic: the sixth key is the tonic an octave up (C5)", gate_note(t, 72) && ngated(t) == 1u && hc.lead_deg == 0u);
@@ -526,11 +529,11 @@ static int play_modes(void)
     bad += check("  two after 210 ms", ngated(t) == 2u);
     key_up(K_III); run_ms(300);
     hc_play_set(t, HP_LEAD);
-    bad += check("LEAD: the track is LEGATO (one voice)", t->p[P_VOICE] == V_LEGATO);
+    bad += check("LEAD: the track POLY (a note a key)", t->p[P_VOICE] == V_POLY);
     key_down(K_I);
     bad += check("  a key: its scale note alone (C4)", ngated(t) == 1u && gate_note(t, 60));
     key_down(K_III);
-    bad += check("  a second key: the new note, still one voice (E4)", ngated(t) == 1u && gate_note(t, 64));
+    bad += check("  a second key: its note too, both sounding (C4 E4)", ngated(t) == 2u && gate_note(t, 64) && gate_note(t, 60));
     key_up(K_III); key_up(K_I);
     bad += check("  released", !ngated(t));
     hc_play_set(t, HP_DRONE);

@@ -59,9 +59,9 @@ int main(int argc, char **argv)
     key_up(10);
     key_up(0);
     hui_mode_set(&trk[0], HP_LEAD); hframes(2);          /* LEAD: ii plays D3 alone, named */
-    key_down(2); hframes(3);
+    key_down(2); key_down(6); key_down(9); hframes(3);   /* D4 F4 A4 together */
     ppm(argv[1], "home_lead");
-    key_up(2); hframes(2);
+    key_up(2); key_up(6); key_up(9); hframes(2);
     key_down(23); hframes(3);                            /* the fourteenth key: B5, up the same piano */
     ppm(argv[1], "home_lead_hi");
     key_up(23); hframes(2);

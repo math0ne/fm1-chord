@@ -181,7 +181,10 @@ notes from the scale all the way up". LEAD now has no chords and no strumplate: 
 keys walk the track's scale from the tonic at C4 (an octave above the chords), one note each, wrapping
 by the scale's length (a pentatonic repeats every five keys). HOME names the note (D4) with its degree
 (seven-note scales) and shows it alone on the piano; the legend numbers every key by its degree.
-hc_lead_note in hichord.c; hc.lead_note / lead_deg carry the display.
+hc_lead_note in hichord.c; hc.lead_note / lead_deg carry the display. Then "i should be able to play
+multiple notes at one time and it should display that": LEAD is polyphonic (the track POLY, not
+LEGATO), HOME names every held note low to high (D4 F4 A4) and lights them all; the piano window
+stands on the first key's octave so a note climbing the keys climbs the piano.
 
 ## ACOUSTIC GTR (owner's request)
 

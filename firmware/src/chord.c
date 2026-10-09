@@ -87,8 +87,9 @@ static uint32_t chord_make(const track_t *t, uint32_t root, uint8_t *out, int32_
         return 1;
     }
     if (mode == CH_HI) {                                /* the HiChord layer (hichord.c) */
-        if (trk_vmode(t) != V_POLY) {                   /* one voice (LEAD): a white key plays its note of the
-                                                         * scale (hc_lead_note), a MIDI note / step snaps onto it */
+        if (hc_of(t)->play == HP_LEAD || trk_vmode(t) != V_POLY) {   /* LEAD (or one voice): a white key plays its
+                                                         * note of the scale (hc_lead_note), a MIDI note / step snaps
+                                                         * onto it */
             uint32_t d = 0;
             int32_t rr = hc.cur_key < 27u ? hc_lead_note(t, hc.cur_key, &d) : scale_snap(t, (int32_t)root);
             if (hc.cur_key >= 27u)

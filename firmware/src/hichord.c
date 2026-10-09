@@ -6,7 +6,7 @@
  * keys to their right, F4..G5, are the strumplate (hc_plate_on: one note of the chord last played each,
  * rising), as the Omnichord has its chord buttons left and its strumplate right; in the other modes they
  * are the degrees again, an octave up. LEAD: all sixteen white keys walk the scale from the tonic at C4,
- * one note each (hc_lead_note), no chords, no plate. The black keys are the eight
+ * one note each (hc_lead_note), polyphonic, no chords, no plate. The black keys are the eight
  * modifier directions and three gestures:
  *   C#4 up, D#4 up-right, F#4 right, G#4 down-right, A#4 down, C#5 down-left, D#5 left, F#5 up-left
  *   F#3 INVERT (with chord keys held: their inversion cycles), G#3 LOCK (with a chord key and a
@@ -263,7 +263,7 @@ static void hc_apply(track_t *t)
                                                           * fix: 5 dB down keeps the kit where it was against the chords */
             t->p[P_LEVEL] = 96;
     }
-    t->p[P_VOICE] = (int16_t)(c->play == HP_LEAD ? V_LEGATO : V_POLY);
+    t->p[P_VOICE] = V_POLY;                              /* (LEAD too: a note a key, as many as are held) */
     t->p[P_AMODE] = 0;
     t->p[P_AHOLD] = 0;
     t->p[P_CHRD] = CH_HI;
@@ -722,8 +722,8 @@ static void hc_gate(track_t *t, int on)
 static void hc_slash_take(track_t *t, uint32_t k)
 {
     uint32_t i;
-    if (hc_of(t)->bass != HB_SLASH || hc.nheld < 2u || hc.order[0] == k)
-        return;
+    if (hc_of(t)->bass != HB_SLASH || hc_of(t)->play == HP_LEAD || hc.nheld < 2u || hc.order[0] == k)
+        return;                                          /* (LEAD: notes, not chords: every key keeps its own) */
     for (i = 0; i < hc.nheld; i++) {
         uint32_t j = hc.order[i];
         if (j != k && kb_chn[j] && &trk[kb_trk[j] % NTRK] == t)
@@ -894,7 +894,7 @@ static void hc_key_off(uint32_t k, track_t *t)
         kb_chn[k] = 0;                                   /* (gated off already) */
     else
         key_off(k, t);
-    if (c->bass == HB_SLASH && hc.nheld && c->play != HP_ARP && c->play != HP_REPEAT &&
+    if (c->bass == HB_SLASH && hc.nheld && c->play != HP_ARP && c->play != HP_REPEAT && c->play != HP_LEAD &&
         &trk[kb_trk[hc.order[0]] % NTRK] == t) {
         uint32_t b = hc.order[0];
         if (!kb_chn[b]) {                                /* the chord key let go, the bass key still held: its own

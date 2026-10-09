@@ -165,7 +165,7 @@ static int test_mode_menu_knobs(void)
     press(B_OCTUP);
     bad += check("  OCT+: STRUM", hc.t[0].play == HP_STRUM && val_is(HU_MODE, RM_MODE, "STRUM"));
     press(B_OCTUP);
-    bad += check("  .. LEAD: the track LEGATO, no partners", hc.t[0].play == HP_LEAD && t->p[P_VOICE] == V_LEGATO && trk_pair[0] == 0u);
+    bad += check("  .. LEAD: the track POLY (a note a key), no partners", hc.t[0].play == HP_LEAD && t->p[P_VOICE] == V_POLY && trk_pair[0] == 0u);
     turn(EN_SELECT, 1); press(B_OCTUP); press(B_OCTUP);
     bad += check("TEMPO: 122", song.g[G_BPM] == 122);
     turn(EN_SELECT, 1); press(B_OCTUP);
