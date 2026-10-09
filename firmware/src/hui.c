@@ -9,7 +9,7 @@
  *   OCT- / +  the value of the row (a menu); the octave (HOME); both: RANDOMIZE (ALL on KEY, the sound on
  *             SOUND, the pattern on MODE)
  *   ALGORITHM the play mode, PRESETS the sound, KNOB 1 the FILTER wheel, KNOB 2 RESONANCE, KNOB 3 ATTACK, KNOB 4 RELEASE,
- *             KNOB 4 the tempo: on every screen
+ *             the value shown in the header as it turns (KNOB 4 on a SOUND effect row: the amount): on every screen
  *   ENV / LFO the envelope preset / the vibrato; ARP: ARP mode and back; EDIT tapped three times: tap tempo
  * Included after Felucca's ui*.c (it uses their drawing, sounds and projects); ui_input / ui_draw / ui_leds
  * hand over to hui_* while hui.on. */

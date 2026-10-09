@@ -3,7 +3,9 @@
 # Copyright (C) 2026 fm1-chord contributors
 """The fm1-chord controls diagram (screenshots/controls.png): a drawn schematic of the FM-1's panel (the
 geometry of Felucca's docs/panel.jpg: 8 knobs, 12 buttons in two rows, OCT- / OCT+, 27 keys) with every
-control labelled by what it does in the HiChord UI, in the HiChord's colours. Pillow only.
+control labelled by what it does in the HiChord UI. One colour scheme throughout: a control is drawn in
+the colour of what it opens or does (yellow sound, grey key, red mode, green presets and play, blue
+looper, white neutral), and its card carries the same bar. Cards size themselves to their text. Pillow only.
 
   gen_controls_diagram.py OUT.png
 """
@@ -14,10 +16,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 FONT = ROOT / "assets/fonts/InterTight[wght].ttf"
-W, H = 1200, 960
-BG, CARD, INK, DIM = (30, 30, 32), (70, 70, 74), (255, 255, 255), (170, 170, 176)
-GREY, YELLOW, RED, GREEN, BLUE = (150, 152, 160), (245, 196, 0), (226, 62, 62), (70, 200, 120), (80, 150, 255)
+W, H = 1200, 860
+BG, CARD, INK, DIM = (30, 30, 32), (70, 70, 74), (255, 255, 255), (178, 178, 184)
+GREY, YELLOW, RED, GREEN, BLUE, WHITE = (150, 152, 160), (245, 196, 0), (226, 62, 62), (70, 200, 120), (80, 150, 255), (225, 225, 230)
 DEG = [(255, 92, 92), (255, 160, 48), (250, 220, 70), (96, 214, 120), (72, 200, 236), (120, 128, 255), (206, 112, 240)]
+KEY_W, KEY_B = (236, 236, 240), (22, 22, 26)
 
 
 def font(size, weight=500):
@@ -29,29 +32,59 @@ def font(size, weight=500):
     return f
 
 
-# the device, drawn: a body of 760 x 420 at (220, 110); positions follow docs/panel.jpg
-DX, DY, DW, DH = 220, 110, 760, 430
+F_TITLE, F_BODY, F_SUB = font(11, 600), font(15, 600), font(12, 450)
+
+# the device, drawn: a body of 760 wide at (220, 110); positions follow docs/panel.jpg, with the rows
+# under the knobs pushed down 26 px to give the top buttons' leader lanes room
+DX, DY, DW, DH, PUSH = 220, 110, 760, 456, 26
 
 
 def dev(x, y):                       # photo pixels (1750 x 1050, crop 70..1680 x 60..960) -> canvas
-    return DX + (x - 70) * DW / 1610, DY + (y - 60) * DH / 900
+    return DX + (x - 70) * DW / 1610, DY + (y - 60) * 430 / 900 + (PUSH if y > 300 else 0)
 
 
 KNOBS = {"MASTER": (175, 178), "SELECT": (355, 178), "PRESETS": (175, 350), "ALGORITHM": (355, 350),
          "KNOB 1": (978, 178), "KNOB 2": (1163, 178), "KNOB 3": (1348, 178), "KNOB 4": (1533, 178)}
+KNOB_CAP = {"KNOB 1": "FILTER", "KNOB 2": "RESO", "KNOB 3": "ATTACK", "KNOB 4": "RELEASE"}
 BTN_X = (997, 1105, 1207, 1315, 1417, 1525)
 BUTTONS = {}
 for row, y, names in ((0, 352, "FX SCL ENV LFO EDIT GLO"), (1, 454, "HOME SAVE ARP SEQ PLAY REC")):
     for x, n in zip(BTN_X, names.split()):
         BUTTONS[n] = (x, y)
 BUTTONS["OCT-"], BUTTONS["OCT+"] = (198, 487), (328, 487)
-BTN_COL = {"SCL": GREY, "FX": YELLOW, "EDIT": RED, "SAVE": GREEN, "SEQ": BLUE, "PLAY": GREEN, "REC": RED}
+# what each button opens or does, by colour: sound yellow, key grey, mode red, presets / transport green, looper blue
+BTN_COL = {"FX": YELLOW, "ENV": YELLOW, "LFO": YELLOW, "GLO": YELLOW, "SCL": GREY, "EDIT": RED, "ARP": RED,
+           "SAVE": GREEN, "PLAY": GREEN, "SEQ": BLUE, "REC": RED, "HOME": WHITE, "OCT-": WHITE, "OCT+": WHITE}
+SOLID = {"FX", "SCL", "EDIT", "SAVE", "SEQ", "PLAY", "REC"}          # the menu / transport buttons: filled
+KNOB_COL = {"SELECT": GREY, "PRESETS": YELLOW, "ALGORITHM": RED, "KNOB 1": YELLOW, "KNOB 2": YELLOW, "KNOB 3": YELLOW,
+            "KNOB 4": YELLOW, "MASTER": WHITE}
+KW, KH = 40.5, 150                                       # a white key
+BLACK_AFTER = (0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14)       # the black keys: after these white keys
+BLACK_FN = ("INV", "LCK", "HLD", "↑", "↗", "→", "↘", "↓", "↙", "←", "↖")
+
+
+def white_x(i):
+    return dev(100, 580)[0] + i * (KW + 2)
+
+
+def key_labels(d, ky):
+    """the keys' labels, drawn last so the leader lines run behind them"""
+    for i in range(16):
+        x, deg = white_x(i), (i + 3) % 7
+        cx = x + KW / 2
+        d.rounded_rectangle((cx - 9, ky + KH - 39, cx + 9, ky + KH - 21), 4, fill=KEY_W)
+        d.text((cx, ky + KH - 30), str(deg + 1), fill=(90, 90, 96), font=font(13, 600), anchor="mm")
+        d.rectangle((x + 6, ky + KH - 14, x + KW - 6, ky + KH - 8), fill=DEG[deg])
+    for p, a in enumerate(BLACK_AFTER):
+        x = white_x(a) + KW - 11
+        col = GREEN if p < 3 else YELLOW
+        d.rounded_rectangle((x + 1, ky + 58, x + 23, ky + 82), 3, fill=KEY_B)
+        d.text((x + 12, ky + 70), BLACK_FN[p], fill=col, font=font(9 if p < 3 else 15, 700), anchor="mm")
 
 
 def draw_device(d):
     d.rounded_rectangle((DX, DY, DX + DW, DY + DH), 26, fill=(58, 58, 62), outline=(90, 90, 96), width=2)
-    # the screen
-    sx, sy = dev(490, 140)
+    sx, sy = dev(490, 140)                                   # the screen
     d.rounded_rectangle((sx, sy, sx + 150, sy + 150), 8, fill=(16, 18, 24), outline=(110, 110, 116), width=2)
     d.rounded_rectangle((sx + 6, sy + 6, sx + 68, sy + 26), 4, fill=GREY)
     d.rounded_rectangle((sx + 72, sy + 6, sx + 118, sy + 26), 4, fill=RED)
@@ -59,122 +92,130 @@ def draw_device(d):
     for i in range(7):
         d.rounded_rectangle((sx + 10 + i * 19, sy + 110, sx + 24 + i * 19, sy + 134), 3, fill=(38, 40, 48))
         d.rectangle((sx + 12 + i * 19, sy + 129, sx + 22 + i * 19, sy + 132), fill=DEG[i])
-    # the knobs
-    for n, (x, y) in KNOBS.items():
+    for n, (x, y) in KNOBS.items():                           # the knobs, ringed in their colour
         cx, cy = dev(x, y)
-        d.ellipse((cx - 18, cy - 18, cx + 18, cy + 18), fill=(28, 28, 30), outline=(120, 120, 126), width=2)
+        d.ellipse((cx - 18, cy - 18, cx + 18, cy + 18), fill=(28, 28, 30), outline=KNOB_COL[n], width=3)
         d.line((cx, cy - 4, cx, cy - 16), fill=INK, width=3)
-        d.text((cx, cy + 30), n, fill=DIM, font=font(10, 600), anchor="mm")
-    # the buttons
-    for n, (x, y) in BUTTONS.items():
+        d.text((cx, cy + 30), KNOB_CAP.get(n, n), fill=DIM, font=font(10, 600), anchor="mm")
+    for n, (x, y) in BUTTONS.items():                         # the buttons: filled, or ringed, in their colour
         cx, cy = dev(x, y)
         w, h = (32, 22) if n.startswith("OCT") else (26, 20)
-        col = BTN_COL.get(n, (40, 40, 44))
-        d.rounded_rectangle((cx - w, cy - h, cx + w, cy + h), 7, fill=col if n in BTN_COL else (36, 36, 40),
-                            outline=(110, 110, 116), width=2)
-        d.text((cx, cy), n, fill=INK if n in ("EDIT", "REC") else (20, 20, 22) if n in BTN_COL else DIM,
-               font=font(11, 700), anchor="mm")
-    # the keys: 16 white, 11 black
-    kx0, ky = dev(100, 580)
-    kw, kh = 40.5, 150
-    whites = []
+        col = BTN_COL[n]
+        if n in SOLID:
+            d.rounded_rectangle((cx - w, cy - h, cx + w, cy + h), 7, fill=col, outline=col, width=2)
+            d.text((cx, cy), n, fill=INK if col in (RED, BLUE) else (20, 20, 22), font=font(11, 700), anchor="mm")
+        else:
+            d.rounded_rectangle((cx - w, cy - h, cx + w, cy + h), 7, fill=(36, 36, 40), outline=col, width=3)
+            d.text((cx, cy), n, fill=col if col != WHITE else INK, font=font(11, 700), anchor="mm")
+    ky = dev(100, 580)[1]                                     # the keys: 16 white, 11 black (labels later)
     for i in range(16):
-        x = kx0 + i * (kw + 2)
-        deg = (i + 3) % 7
-        d.rounded_rectangle((x, ky, x + kw, ky + kh), 7, fill=(236, 236, 240), outline=(120, 120, 126), width=1)
-        d.rectangle((x + 6, ky + kh - 14, x + kw - 6, ky + kh - 8), fill=DEG[deg])
-        whites.append(x)
-    after = (0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14)
-    fn = ("INV", "LOCK", "HOLD", "↑", "↗", "→", "↘", "↓", "↙", "←", "↖")
-    for p, a in enumerate(after):
-        x = whites[a] + kw - 11
-        col = GREEN if p < 3 else YELLOW
-        d.rounded_rectangle((x, ky - 4, x + 24, ky + 86), 5, fill=(22, 22, 26), outline=(100, 100, 106), width=1)
-        d.text((x + 12, ky + 70), fn[p], fill=col, font=font(10 if p < 3 else 15, 700), anchor="mm")
-    return whites, kx0, ky, kw, kh
+        x = white_x(i)
+        d.rounded_rectangle((x, ky, x + KW, ky + KH), 7, fill=KEY_W, outline=(120, 120, 126), width=1)
+    for a in BLACK_AFTER:
+        x = white_x(a) + KW - 11
+        d.rounded_rectangle((x, ky - 4, x + 24, ky + 86), 5, fill=KEY_B, outline=(100, 100, 106), width=1)
+    return ky
 
 
-def card(d, x, y, w, h, title, body, col=None, sub=None):
+def card_size(d, title, body, sub, min_w=0):
+    w = max(d.textlength(title, font=F_TITLE), d.textlength(body, font=F_BODY),
+            d.textlength(sub, font=F_SUB) if sub else 0) + 22 + 14
+    return int(max(w, min_w)), 64 if sub else 50
+
+
+def card(d, x, y, title, body, col, sub=None, min_w=0, right=None):
+    w, h = card_size(d, title, body, sub, min_w)
+    if right is not None:
+        x = right - w
     d.rounded_rectangle((x, y, x + w, y + h), 10, fill=CARD)
-    if col:
-        d.rounded_rectangle((x + 8, y + 10, x + 14, y + h - 10), 3, fill=col)
-    d.text((x + 22, y + 10), title, fill=DIM, font=font(11, 600))
-    d.text((x + 22, y + 26), body, fill=INK, font=font(15, 600))
+    d.rounded_rectangle((x + 8, y + 10, x + 14, y + h - 10), 3, fill=col)
+    d.text((x + 22, y + 10), title, fill=DIM, font=F_TITLE)
+    d.text((x + 22, y + 26), body, fill=INK, font=F_BODY)
     if sub:
-        d.text((x + 22, y + 46), sub, fill=DIM, font=font(12, 450))
+        d.text((x + 22, y + 46), sub, fill=DIM, font=F_SUB)
     return (x, y, x + w, y + h)
 
 
-def leader(d, p0, p1, mid=None):
-    pts = [p0] + ([mid] if mid else []) + [p1]
-    d.line(pts, fill=BG, width=5, joint="curve")
-    d.line(pts, fill=INK, width=2, joint="curve")
-    d.ellipse((p0[0] - 4, p0[1] - 4, p0[0] + 4, p0[1] + 4), fill=INK, outline=BG, width=2)
+ROUTES = []                                               # (points, dot): drawn in two passes, halos first
+
+
+def route(pts, dot):
+    ROUTES.append((pts, dot))
+
+
+def draw_routes(d):
+    for pts, dot in ROUTES:
+        d.line(pts, fill=BG, width=6, joint="curve")
+    for pts, dot in ROUTES:
+        d.line(pts, fill=INK, width=2, joint="curve")
+        d.ellipse((dot[0] - 4, dot[1] - 4, dot[0] + 4, dot[1] + 4), fill=INK, outline=BG, width=2)
 
 
 def main(out):
     im = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(im)
     d.text((W / 2, 28), "FM-1 controls in fm1-chord", fill=INK, font=font(22, 600), anchor="mm")
-    whites, kx0, ky, kw, kh = draw_device(d)
-    # left column
-    left = (("MASTER", "Volume", None, None), ("PRESETS", "Sound", "turn: the next sound", None),
-            ("ALGORITHM", "Mode", "Play, Strum, Lead, Drone, Arp …", None), ("OCT−", "Octave −", "a menu: value −", None),
-            ("OCT+", "Octave +", "a menu: value +, load", None))
-    anchors = ("MASTER", "PRESETS", "ALGORITHM", "OCT-", "OCT+")
-    for i, ((t, b, s, _), a) in enumerate(zip(left, anchors)):
-        y = 118 + i * 84
-        box = card(d, 16, y, 190, 64, t, b, None, s)
-        src = KNOBS.get(a) or BUTTONS[a]
-        leader(d, dev(*src), (box[2], (box[1] + box[3]) / 2), (DX + 6, dev(*src)[1]) if a.startswith("OCT") else None)
-    # top
-    box = card(d, 290, 52, 150, 50, "SELECT", "Key · menu row")
-    leader(d, dev(*KNOBS["SELECT"]), ((box[0] + box[2]) / 2, box[3]))
-    kx1, kx4 = dev(*KNOBS["KNOB 1"])[0], dev(*KNOBS["KNOB 4"])[0]
-    box = card(d, kx1 - 50, 52, kx4 - kx1 + 100, 50, "KNOB 1 – 4", "Filter · Attack · Release · Tempo")
+    ky = draw_device(d)
+    # left column: each card level with its control; the ALGORITHM one is reached over the PRESETS knob
+    mx, my = dev(*KNOBS["MASTER"])
+    px, py = dev(*KNOBS["PRESETS"])
+    gx, gy = dev(*KNOBS["ALGORITHM"])
+    ox, oy = dev(*BUTTONS["OCT-"])
+    left = (("MASTER", "Volume", "the pot", WHITE, 126, [(mx, my)]),
+            ("ALGORITHM", "Mode", "shows the list while it turns", RED, 200, [(gx, gy - 18), (gx, 232)]),
+            ("PRESETS", "Sound", "shows the list while it turns", YELLOW, 272, [(px - 18, py)]),
+            ("OCT−  OCT+", "Octave − / +", "in a menu: value − / +", WHITE, 344, [(ox - 32, oy)]))
+    for t, b, s, col, y, pts in left:
+        box = card(d, 16, y, t, b, col, s, min_w=190)
+        route(pts + [(box[2], (box[1] + box[3]) / 2)], pts[0])
+    # top: SELECT, the four knobs
+    box = card(d, 270, 48, "SELECT", "Key · menu row · list choice", GREY)
+    route([dev(*KNOBS["SELECT"]), ((box[0] + box[2]) / 2, box[3])], dev(*KNOBS["SELECT"]))
+    kx4 = dev(*KNOBS["KNOB 4"])[0]
+    box = card(d, 0, 48, "KNOB 1 – 4", "Filter · Resonance · Attack · Release",
+               YELLOW, "the value shows as you turn; KNOB 4 on an effect row: its amount", right=kx4 + 70)
     for k in range(4):
-        x = dev(*KNOBS[f"KNOB {k + 1}"])[0]
-        leader(d, (x, dev(*KNOBS["KNOB 1"])[1]), (x, box[3]))
-    # right column: the top row of buttons
-    right = (("FX", "SOUND menu", "sounds, effects, settings", YELLOW), ("SCL", "KEY menu", "key, scale, chords", GREY),
-             ("ENV", "Envelope preset", "LONG SHORT SWELL PLUCK …", None), ("LFO", "Vibrato", "OFF LOW MED HIGH", None),
-             ("EDIT", "MODE menu", "modes, tempo; 3 taps: tap tempo", RED), ("GLO", "Settings", "(the SOUND menu)", None))
+        x, y = dev(*KNOBS[f"KNOB {k + 1}"])
+        route([(x, y), (x, box[3])], (x, y))
+    # right column: the top row of buttons, their lanes between the knob captions and the buttons
+    right = (("FX", "SOUND menu", "sounds, effects, settings", YELLOW), ("SCL", "KEY menu", "key, scale, bass, voices", GREY),
+             ("ENV", "ENVELOPE list", "LONG SHORT SWELL PLUCK …", YELLOW), ("LFO", "LFO list", "vibrato OFF LOW MED HIGH", YELLOW),
+             ("EDIT", "MODE menu", "modes, tempo · 3 taps: tap tempo", RED), ("GLO", "SOUND menu", "the same as FX", YELLOW))
     for i, (n, b, s, col) in enumerate(right):
         y = 118 + i * 70
-        box = card(d, 994, y, 196, 62, n, b, col, s)
+        box = card(d, 0, y, n, b, col, s, min_w=200, right=W - 10)
         ax, ay = dev(*BUTTONS[n])
-        lane = DY + 102 + i * 7
-        pts = [(ax, ay - 20), (ax, lane), (DX + DW - 6, lane), (box[0], (box[1] + box[3]) / 2)]
-        d.line(pts, fill=BG, width=5, joint="curve")
-        d.line(pts, fill=INK, width=2, joint="curve")
-        d.ellipse((ax - 4, ay - 24, ax + 4, ay - 16), fill=INK, outline=BG, width=2)
-    # bottom row: HOME SAVE ARP SEQ PLAY REC
-    bottom = (("HOME", "Home", "held: Felucca's synth", None), ("SAVE", "Presets P1–P4", "again: save", GREEN),
-              ("ARP", "Arp mode", "on / off", None), ("SEQ", "LOOPER screen", "layers, bars, metronome", BLUE),
+        lane = DY + 100 + i * 7
+        route([(ax, ay - 20), (ax, lane), (DX + DW - 6, lane), (box[0], (box[1] + box[3]) / 2)], (ax, ay - 20))
+    # bottom row: HOME SAVE ARP SEQ PLAY REC, straight down through the keys to lanes under the device
+    bottom = (("HOME", "Home", "held: Felucca's synth", WHITE), ("SAVE", "Presets P1–P4", "again: save", GREEN),
+              ("ARP", "Arp mode", "on / off", RED), ("SEQ", "LOOPER screen", "layers, bars, metronome", BLUE),
               ("PLAY", "Play / pause", "looper, sequencer, loops", GREEN), ("REC", "Record a layer", "held: clear it", RED))
-    by = DY + DH + 150
-    for i, (n, b, s, col) in enumerate(bottom):
-        x = 230 + i * 128
-        box = card(d, x, by, 120, 64, n, b, col, s)
+    sizes = [card_size(d, n, b, s, 140) for n, b, s, _ in bottom]
+    gap, total = 10, sum(w for w, _ in sizes) + 10 * 5
+    x = (W - total) / 2
+    by = DY + DH + 66
+    for i, ((n, b, s, col), (w, _)) in enumerate(zip(bottom, sizes)):
+        box = card(d, int(x), by, n, b, col, s, min_w=140)
         ax, ay = dev(*BUTTONS[n])
         cx = (box[0] + box[2]) / 2
-        lane = DY + 212 + i * 7
-        pts = [(ax, ay + 20), (ax, lane), (cx, lane), (cx, box[1])]
-        d.line(pts, fill=BG, width=5, joint="curve")
-        d.line(pts, fill=INK, width=2, joint="curve")
-        d.ellipse((ax - 4, ay + 16, ax + 4, ay + 24), fill=INK, outline=BG, width=2)
+        lane = DY + DH + 12 + i * 7
+        route([(ax, ay + 20), (ax, lane), (cx, lane), (cx, box[1])], (ax, ay + 20))
+        x += w + gap
+    draw_routes(d)
+    key_labels(d, ky)
     # the keys' legend, under the keys
     ly = by + 80
     d.rounded_rectangle((16, ly, W - 16, H - 12), 12, fill=CARD)
     f15, f13 = font(15, 600), font(13, 450)
-    d.text((34, ly + 12), "WHITE KEYS", fill=DIM, font=font(11, 600))
-    d.text((34, ly + 28), "Scale degrees: C4 is I, D4 ii, E4 iii, F4 IV, G4 V, A4 vi, B4 vii; F3–B3 an octave down, C5–G5 up",
+    d.text((34, ly + 12), "WHITE KEYS", fill=DIM, font=F_TITLE)
+    d.text((34, ly + 28), "Scale degrees, numbered on the keys: C4 is 1 (I), D4 2 (ii) … B4 7 (vii); F3–B3 an octave down, C5–G5 up",
            fill=INK, font=f15)
-    d.text((34, ly + 50), "BLACK KEYS", fill=DIM, font=font(11, 600))
+    d.text((34, ly + 50), "BLACK KEYS", fill=DIM, font=F_TITLE)
     d.text((34, ly + 66), "C#4 ↑  D#4 ↗  F#4 →  G#4 ↘  A#4 ↓  C#5 ↙  D#5 ←  F#5 ↖  the HiChord's joystick, held with a chord;  "
                           "F#3 INVERT  G#3 LOCK  A#3 HOLD", fill=INK, font=f15)
-    d.text((34, ly + 90), "OCT− and OCT+ together: RANDOMIZE (all on the KEY menu, the sound on SOUND, the pattern on MODE).  "
-                          "SAVE with HOME held: back from Felucca's synth.", fill=DIM, font=f13)
+    d.text((34, ly + 90), "Colours: yellow sound · grey key · red mode · green presets and play · blue looper.  "
+                          "OCT− and OCT+ together: RANDOMIZE.  SAVE with HOME held: back from Felucca's synth.", fill=DIM, font=f13)
     im.save(out)
     print(out)
 
