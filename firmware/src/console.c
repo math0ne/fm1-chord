@@ -106,6 +106,56 @@ static int con_word(const char **p, const char *w)       /* match a whole word *
     return 1;
 }
 
+/* fm1-chord: `hc` the master effects' state and the live track's voices (sides); `hc enc ROLE STEPS`
+ * turns a panel knob from the console (0 SELECT 1 ALGORITHM 2 PRESETS 3..6 KNOB1-4, + = clockwise) */
+static void con_hc(const char *p)
+{
+    char b[16];
+    uint32_t i;
+    if (con_word(&p, "enc")) {
+        int ok = 1, neg = 0;
+        uint32_t role = con_num(&p, &ok), st;
+        while (*p == ' ')
+            p++;
+        if (*p == '-')
+            neg = 1, p++;
+        st = con_num(&p, &ok);
+        if (!ok || role >= NE || st > 100u) {
+            con_puts("usage: hc enc ROLE(0..6) STEPS(-100..100)\r\n");
+            return;
+        }
+        fm1_in.enc_steps[panel.enc[role]] =
+            (int16_t)(fm1_in.enc_steps[panel.enc[role]] + (neg ? -(int32_t)st : (int32_t)st) * panel.dir[role]);
+        con_puts("ok\r\n");
+        return;
+    }
+    con_puts("hcfx filt "); fmt_int(b, hcfx.filt); con_puts(b);
+    con_puts(" hp "); fmt_int(b, hcfx.hp); con_puts(b);
+    con_puts(" flg "); fmt_int(b, hcfx.flg); con_puts(b);
+    con_puts(" tape "); fmt_int(b, hcfx.tape); con_puts(b);
+    con_puts(" cutoff "); fmt_int(b, hcfx.cutoff); con_puts(b);
+    con_puts(" lc "); fmt_int(b, hcfx.lc); con_puts(b);
+    con_puts("\r\nlk ");
+    for (i = 0; i < 3u; i++) { fmt_int(b, hcfx.lk[i]); con_puts(b); con_puts(" "); }
+    con_puts(" hk ");
+    for (i = 0; i < 3u; i++) { fmt_int(b, hcfx.hk[i]); con_puts(b); con_puts(" "); }
+    con_puts("\r\nlz ");
+    for (i = 0; i < 4u; i++) { fmt_int(b, hcfx.lz[i]); con_puts(b); con_puts(" "); }
+    con_puts(" hz ");
+    for (i = 0; i < 4u; i++) { fmt_int(b, hcfx.hz[i]); con_puts(b); con_puts(" "); }
+    con_puts("\r\npair "); fmt_int(b, trk_pair[TSEL - trk]); con_puts(b);
+    con_puts(" voices:");
+    for (i = 0; i < NVOICE; i++) {
+        const voice_t *v = &TSEL->v[i];
+        if (!v->active)
+            continue;
+        con_puts(" ["); fmt_int(b, v->note); con_puts(b);
+        con_puts(v->pair ? " p" : " m"); con_puts(v->side ? "B" : "A");
+        con_puts(v->gate ? "" : " rel"); con_puts("]");
+    }
+    con_puts("\r\n");
+}
+
 static void con_memr(const char *p)
 {
     int ok, ok2;
@@ -342,7 +392,7 @@ static void con_params(void)
 static void con_exec(const char *p)
 {
     if (con_word(&p, "help") || con_word(&p, "?"))
-        con_puts("status  dbg  inp  crash  params  memr ADDR [LEN]  flr OFF [LEN]  factory yes  uboot yes\r\n");
+        con_puts("status  dbg  inp  crash  params  memr ADDR [LEN]  flr OFF [LEN]  factory yes  hc [enc ROLE STEPS]  uboot yes\r\n");
     else if (con_word(&p, "status"))
         con_status();
     else if (con_word(&p, "dbg"))
@@ -359,6 +409,8 @@ static void con_exec(const char *p)
     else if (con_word(&p, "flr"))
         con_flr(p);
 #endif
+    else if (con_word(&p, "hc"))
+        con_hc(p);
     else if (con_word(&p, "factory")) {
         if (con_word(&p, "yes")) {
             con_puts("erasing settings, presets and projects; rebooting\r\n");

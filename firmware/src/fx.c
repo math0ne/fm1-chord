@@ -320,7 +320,8 @@ static int32_t send_c[CTL], send_d[CTL], send_r[CTL], wet[CTL], mix_l[CTL], mix_
 
 /* one synth part into the dry mix and the sends; a part with no voice sounding costs
  * the LFO tick and a cleared buffer only (after the DIST tail has run out) */
-static int32_t side_buf[CTL], side_s[CTL];              /* fm1-chord: a paired part's side B, and its S */
+static int32_t side_buf[CTL], side_s[CTL], mono_buf[CTL];   /* fm1-chord: a paired part's side B, its S, its
+                                                             * unpaired voices (centred) */
 static void mix_part(track_t *t, uint32_t n)
 {
     int32_t *b = part_buf;
@@ -329,15 +330,16 @@ static void mix_part(track_t *t, uint32_t n)
     if (paired) {                                       /* STEREO partners: side A into b, side B into side_buf; the
                                                          * chain below runs on their mid, the mix adds +-S (width ~0.7) */
         for (i = 0; i < n; i++)
-            side_buf[i] = 0;
+            side_buf[i] = mono_buf[i] = 0;
         render_side = side_buf;
+        render_mono = mono_buf;
     }
     nr = track_render(t, b, n);
-    render_side = 0;
+    render_side = render_mono = 0;
     if (paired)
         for (i = 0; i < n; i++) {
             int32_t a = b[i], c = side_buf[i];
-            b[i] = (a + c) >> 1;
+            b[i] = ((a + c) >> 1) + mono_buf[i];        /* the pairs' mid, the lone voices whole */
             side_s[i] = (((a - c) >> 1) * 23) >> 5;
         }
     if (nr)

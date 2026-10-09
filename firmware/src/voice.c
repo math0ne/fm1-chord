@@ -536,6 +536,21 @@ static int32_t env_tick(track_t *t, voice_t *v)
 /* Channel bend is live performance state, outside projects/presets. Q8 semitones. */
 static int32_t midi_bend_q8[NTRK], midi_bend_target[NTRK];
 static int32_t *render_side;                            /* fm1-chord: side B of a paired part (fx.c mix_part), 0 = mono */
+static int32_t *render_mono;                            /* fm1-chord: its voices without a live partner: centred */
+
+/* fm1-chord: does this voice's partner (the other half of its pair) sound? A note whose partner was
+ * never allocated (the voice budget), was stolen, or a one-shot engine's note, has none: it must not
+ * go to one side alone (the mix is mid +- side: alone it would sit mostly on that side) */
+static int voice_partnered(const track_t *t, const voice_t *v)
+{
+    uint32_t np = trk_nvoice(t), k;
+    for (k = 0; k < np; k++) {
+        const voice_t *w = &t->v[k];
+        if (w != v && w->active && w->note == v->note && w->pair != v->pair)
+            return 1;
+    }
+    return 0;
+}
 static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
 {
     const engine_t *e = ENGINES[t->engine];
@@ -619,7 +634,16 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
         m.shape = (64 << 8) + ((lfo * p[P_LD_SHP]) >> 7) + ((m.envq15 * p[P_ED_SHP]) >> 7);
         if (mod.on)                                     /* the modulation matrix (mod.c) */
             mod_voice(t, v, &m, v->fine + tune_fine + bend_fine);
-        e->render(t, v, render_side && v->side ? render_side : out, n, &m);
+        {
+            int32_t *dst = out;
+            if (render_side) {                          /* a paired part: side A = out, side B, or mono */
+                if (!voice_partnered(t, v))
+                    dst = render_mono;
+                else if (v->side)
+                    dst = render_side;
+            }
+            e->render(t, v, dst, n, &m);
+        }
         nr++;
     }
     if (fade) {

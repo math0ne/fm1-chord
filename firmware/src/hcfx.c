@@ -51,6 +51,22 @@ static inline int32_t hcfx_tap(const int16_t *buf, uint32_t len, uint32_t w, uin
 }
 static inline int16_t hcfx_q15(int32_t x) { return (int16_t)(x > 32767 ? 32767 : x < -32767 ? -32767 : x); }
 
+/* one channel of the state-variable filter (k = 1) at Q21: x Q15 in (up to +-2^17: the chain before
+ * master_out), Q15 out. perform.c's pf_svf runs at Q13 (>> 2 in, >> 14 truncation), which is fine
+ * after Felucca's master level, but the HiChord wheel sits in the master chain at every MASTER
+ * setting: at a low one the signal is a few hundred LSB and the Q13 truncation hiss follows the
+ * wheel. Int64 products, rounded; the states stay within +-2^24. */
+static inline int32_t hc_svf(int32_t x, int32_t *z, const int16_t *c, int hp)
+{
+    int64_t xx = (int64_t)x << 6, v3 = xx - z[1];
+    int32_t v1 = (int32_t)((c[0] * (int64_t)z[0] + c[1] * v3 + 8192) >> 14);
+    int32_t v2 = (int32_t)(z[1] + ((c[1] * (int64_t)z[0] + c[2] * v3 + 8192) >> 14));
+    int64_t y = hp ? xx - v1 - v2 : v2;
+    z[0] = 2 * v1 - z[0];
+    z[1] = 2 * v2 - z[1];
+    return (int32_t)((y + 32) >> 6);
+}
+
 /* a sine of a Q32 phase, Q15 */
 static inline int32_t hcfx_sin(uint32_t ph) { return osc_sine(ph); }
 
@@ -76,16 +92,16 @@ static inline void hc_master(int32_t *l, int32_t *r)
     if (hcfx.filt && hcfx.cutoff < 126u) {               /* the FILTER wheel: a low-pass at the wheel */
         if (hcfx.lc != (hcfx.cutoff >> 1))
             hcfx_coef();
-        *l = pf_svf(clamp(*l >> 2, -32767, 32767), &hcfx.lz[0], hcfx.lk, 0) << 2;
-        *r = pf_svf(clamp(*r >> 2, -32767, 32767), &hcfx.lz[2], hcfx.lk, 0) << 2;
+        *l = hc_svf(clamp(*l, -131071, 131071), &hcfx.lz[0], hcfx.lk, 0);
+        *r = hc_svf(clamp(*r, -131071, 131071), &hcfx.lz[2], hcfx.lk, 0);
     } else {
         hcfx.lz[0] = hcfx.lz[1] = hcfx.lz[2] = hcfx.lz[3] = 0;
     }
     if (hcfx.hp) {                                       /* HI-PASS: ~150 Hz */
         if (!hcfx.hk[1])
             hcfx_coef();
-        *l = pf_svf(clamp(*l >> 2, -32767, 32767), &hcfx.hz[0], hcfx.hk, 1) << 2;
-        *r = pf_svf(clamp(*r >> 2, -32767, 32767), &hcfx.hz[2], hcfx.hk, 1) << 2;
+        *l = hc_svf(clamp(*l, -131071, 131071), &hcfx.hz[0], hcfx.hk, 1);
+        *r = hc_svf(clamp(*r, -131071, 131071), &hcfx.hz[2], hcfx.hk, 1);
     } else {
         hcfx.hz[0] = hcfx.hz[1] = hcfx.hz[2] = hcfx.hz[3] = 0;
     }
