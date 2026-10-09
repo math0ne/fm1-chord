@@ -29,8 +29,6 @@ menu); tempo is on the mode menu and EDIT tapped three times. Chords over
 drums: record the drum loop into a looper layer; the drum screens show the loop to time it. Your
 settings come back after power-off. HOME held gives you Felucca's full synth underneath.
 
-![controls](screenshots/controls.png)
-
 | | | |
 |---|---|---|
 | ![home](screenshots/home_c7.png) | ![slash chord](screenshots/home_slash.png) | ![inversion](screenshots/home_inverted.png) |
@@ -38,6 +36,8 @@ settings come back after power-off. HOME held gives you Felucca's full synth und
 | ![key menu](screenshots/menu_key.png) | ![sound menu](screenshots/menu_sound_amount.png) | ![mode menu](screenshots/menu_mode.png) |
 | ![looper](screenshots/menu_looper.png) | ![sequencer](screenshots/mode_sequencer.png) | ![drum loop recording](screenshots/mode_drumloop_rec.png) |
 | ![drums](screenshots/mode_drum.png) | ![at rest: the key legend](screenshots/home_idle.png) | ![chord hiro](screenshots/mode_hiro.png) |
+
+![controls](screenshots/controls.png)
 
 Status: running on an FM-1 (installed over USB-MIDI with `tools/fm1_install.py`, 28 % CPU at idle)
 and tested on the host simulator. It also runs in the

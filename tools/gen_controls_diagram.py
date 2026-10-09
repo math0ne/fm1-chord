@@ -87,16 +87,15 @@ def key_labels(d, ky):
         d.text((x + 12, ky + 70), BLACK_FN[p], fill=col, font=font(9 if p < 3 else 15, 700), anchor="mm")
 
 
-def draw_device(d):
+SCREEN = ROOT / "screenshots/home_c7.png"               # the real HOME screen (tests/hui_shot.c), on the device
+
+
+def draw_device(im, d):
     d.rounded_rectangle((DX, DY, DX + DW, DY + DH), 26, fill=(58, 58, 62), outline=(90, 90, 96), width=2)
-    sx, sy = dev(490, 140)                                   # the screen
-    d.rounded_rectangle((sx, sy, sx + 150, sy + 150), 8, fill=(16, 18, 24), outline=(110, 110, 116), width=2)
-    d.rounded_rectangle((sx + 6, sy + 6, sx + 68, sy + 26), 4, fill=GREY)
-    d.rounded_rectangle((sx + 72, sy + 6, sx + 118, sy + 26), 4, fill=RED)
-    d.text((sx + 75, sy + 36), "C7", fill=DEG[0], font=font(34, 700), anchor="mm")
-    for i in range(7):
-        d.rounded_rectangle((sx + 10 + i * 19, sy + 110, sx + 24 + i * 19, sy + 134), 3, fill=(38, 40, 48))
-        d.rectangle((sx + 12 + i * 19, sy + 129, sx + 22 + i * 19, sy + 132), fill=DEG[i])
+    sx, sy = dev(490, 140)                                   # the screen: a rendered screenshot in its bezel
+    sx, sy = int(sx), int(sy)
+    d.rounded_rectangle((sx - 3, sy - 3, sx + 153, sy + 153), 8, fill=(16, 18, 24), outline=(110, 110, 116), width=2)
+    im.paste(Image.open(SCREEN).convert("RGB").resize((150, 150), Image.LANCZOS), (sx, sy))
     for n, (x, y) in KNOBS.items():                           # the knobs, ringed in their colour
         cx, cy = dev(x, y)
         d.ellipse((cx - 18, cy - 18, cx + 18, cy + 18), fill=(28, 28, 30), outline=KNOB_COL[n], width=3)
@@ -160,7 +159,7 @@ def main(out):
     im = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(im)
     d.text((W / 2, 28), "FM-1 controls in fm1-chord", fill=INK, font=font(22, 600), anchor="mm")
-    ky = draw_device(d)
+    ky = draw_device(im, d)
     # left column: each card level with its control; the ALGORITHM one is reached over the PRESETS knob
     mx, my = dev(*KNOBS["MASTER"])
     px, py = dev(*KNOBS["PRESETS"])
