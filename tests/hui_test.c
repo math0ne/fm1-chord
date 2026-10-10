@@ -317,6 +317,47 @@ static int test_draw_and_handover(void)
     return bad;
 }
 
+/* the footer's hints stay inside the screen: nothing drawn in the 4 px right margin (as the 4 px left one), on
+ * every screen and on the SOUND menu's effect rows (KNOB 4 = AMOUNT) */
+static int foot_fits(void)
+{
+    uint32_t x, y;
+    uint16_t bg;
+    hui.force = 1;
+    hframes(2);
+    bg = host_screen[(HU_FOOT_Y + 1u) * 240u];        /* (column 0: the margin) */
+    for (y = HU_FOOT_Y; y < 240u; y++)
+        for (x = 236; x < 240u; x++)
+            if (host_screen[y * 240u + x] != bg)
+                return 0;
+    return 1;
+}
+static int test_footer_fits(void)
+{
+    int bad = 0;
+    uint32_t s, r, ok = 1, fx = 0;
+    char b[64];
+    hui_power_on();
+    for (s = 0; s < HU_N; s++) {
+        hui.screen = (uint8_t)s;
+        if (!foot_fits()) {
+            snprintf(b, sizeof b, "  the footer of screen %u runs into the right margin", s);
+            bad += check(b, 0);
+            ok = 0;
+        }
+    }
+    hui.screen = HU_SOUND;
+    for (r = 0; r < RS_N; r++)
+        if (hui_fx_row(r)) {
+            hui.sel[HU_SOUND] = (uint8_t)r;
+            ok &= foot_fits();
+            fx++;
+        }
+    bad += check("the footer fits the screen on every screen and on the effect rows", ok && fx);
+    hui.screen = HU_HOME;
+    return bad;
+}
+
 static void run_ms2(uint32_t ms)                   /* the audio clock (blocks), with the UI frames between */
 {
     uint32_t n = ms * (FS / 1000u) / CTL, i;
@@ -734,7 +775,7 @@ int main(void)
 {
     int bad = test_slash_first_thing() + test_boot_and_menus() + test_key_menu() + test_sound_menu() + test_mode_menu_knobs() + test_presets() +
               test_draw_and_handover() + test_looper() + test_seq_drums_mixer() + test_games() + test_live_persist() +
-              test_fx_amount() + test_drums_under_chords();
+              test_fx_amount() + test_drums_under_chords() + test_footer_fits();
     printf("%s\n", bad ? "HUI TEST FAILED" : "chord machine ui test passed");
     return bad != 0;
 }
