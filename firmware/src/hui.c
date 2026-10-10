@@ -991,21 +991,26 @@ static void hui_draw_foot(void)
             h[n++] = (hint_t){KC_OCTUP, "VALUE", "SET", T_KEY, T_INK};
             h[n++] = (hint_t){KC_HOME, "BACK", "BACK", T_KEY, T_INK};
         }
-        for (pass = 0; pass < 2u; pass++) {
+        for (pass = 0; pass < 3u; pass++) {             /* the long words; the short ones; the short ones without
+                                                          * HOME's (its keycap says BACK) */
             int32_t w = 0, x = 4, gap;
             for (i = 0; i < n; i++) {
                 const char *a = pass ? h[i].alt : h[i].act;
+                if (pass == 2u && h[i].kc == KC_HOME)
+                    a = "";
                 w += kc_w(h[i].kc) + (a[0] ? 2 + text_w(&AF_S, a) : 0);
             }
             gap = (232 - w) / (int32_t)(n - 1u);
-            if (gap < 2 && !pass)
-                continue;                                /* too wide: the short words */
+            if (gap < 2 && pass < 2u)
+                continue;                                /* too wide: shorter */
             if (gap > 12)
                 gap = 12;
             if (gap < 1)
                 gap = 1;
             for (i = 0; i < n; i++) {
                 const char *a = pass ? h[i].alt : h[i].act;
+                if (pass == 2u && h[i].kc == KC_HOME)
+                    a = "";
                 x = cv_keycap(x, 5, h[i].kc, h[i].fill, h[i].ink, T_BG);
                 if (a[0])
                     x = cv_text_on(x + 2, 4, &AF_S, a, T_MID, T_BG);   /* (on the keycap centre line, as cv_key_hint) */
